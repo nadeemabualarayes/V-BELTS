@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>دليل الربط مع Google Sheets</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0d0f14;--surface:#13161e;--surface2:#1c2030;--surface3:#242840;
+  --border:#2e3348;--accent:#f59e0b;--accent2:#3b82f6;--accent3:#10b981;
+  --danger:#ef4444;--purple:#8b5cf6;--green:#22c55e;
+  --text:#e8eaf0;--muted:#6b7280;--dim:#9ca3af;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);direction:rtl;padding:24px;}
+.container{max-width:860px;margin:0 auto;}
+
+h1{font-size:26px;font-weight:900;margin-bottom:6px;}
+h1 span{color:var(--accent);}
+.subtitle{color:var(--muted);font-size:14px;margin-bottom:32px;}
+
+/* STEP */
+.step{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:28px;margin-bottom:20px;position:relative;}
+.step-num{display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:50%;background:var(--accent);color:#000;font-size:16px;font-weight:900;margin-bottom:14px;}
+.step-title{font-size:18px;font-weight:900;margin-bottom:8px;}
+.step-sub{font-size:13px;color:var(--dim);margin-bottom:18px;line-height:1.7;}
+
+/* INSTRUCTION */
+.instr{display:flex;gap:14px;align-items:flex-start;padding:12px 16px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;margin-bottom:10px;}
+.instr-num{width:24px;height:24px;border-radius:50%;background:var(--accent2);color:#fff;font-size:11px;font-weight:900;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;}
+.instr-text{font-size:13px;line-height:1.7;}
+.instr-text b{color:var(--accent);}
+.instr-text code{background:var(--surface3);border:1px solid var(--border);border-radius:5px;padding:2px 7px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--accent2);}
+
+/* CODE BLOCK */
+.code-block{background:#0a0c10;border:1px solid var(--border);border-radius:12px;padding:20px;margin:14px 0;position:relative;overflow-x:auto;}
+.code-block pre{font-family:'IBM Plex Mono',monospace;font-size:12px;line-height:1.7;color:#e8eaf0;white-space:pre;}
+.code-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+.code-lang{font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:1px;}
+.copy-btn{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;color:var(--text);font-family:'Cairo',sans-serif;transition:all .2s;}
+.copy-btn:hover{border-color:var(--accent);color:var(--accent);}
+.copy-btn.copied{background:rgba(16,185,129,.15);border-color:var(--accent3);color:var(--accent3);}
+
+/* HIGHLIGHT */
+.hl-green{color:#4ade80;}
+.hl-blue{color:#60a5fa;}
+.hl-yellow{color:#fbbf24;}
+.hl-purple{color:#c084fc;}
+.hl-red{color:#f87171;}
+.hl-gray{color:#6b7280;}
+
+/* TIP BOX */
+.tip{background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.25);border-radius:10px;padding:14px 16px;margin:14px 0;font-size:13px;line-height:1.7;}
+.tip-icon{font-size:16px;margin-left:6px;}
+.warn{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.25);}
+.info{background:rgba(59,130,246,.08);border:1px solid rgba(59,130,246,.25);}
+
+/* SHEETS PREVIEW */
+.sheets-preview{background:#1e2532;border:1px solid var(--border);border-radius:12px;overflow:hidden;margin:14px 0;}
+.sheets-header{background:#2a3347;padding:10px 16px;display:flex;align-items:center;gap:10px;}
+.sheets-dot{width:10px;height:10px;border-radius:50%;}
+.sheets-title{font-size:12px;color:var(--dim);font-family:'IBM Plex Mono',monospace;}
+.sheets-table{width:100%;border-collapse:collapse;font-size:11px;}
+.sheets-table th{background:#252e3e;padding:8px 12px;text-align:right;color:var(--muted);font-weight:700;border:1px solid #2e3a52;}
+.sheets-table td{padding:8px 12px;border:1px solid #2e3a52;color:var(--dim);}
+.sheets-table td.filled{color:var(--text);}
+.sheets-table td.num{font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:10px;}
+.sheets-table tr:hover td{background:rgba(59,130,246,.05);}
+
+/* FLOW */
+.flow{display:flex;align-items:center;justify-content:center;gap:0;margin:20px 0;flex-wrap:wrap;}
+.flow-item{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px 16px;text-align:center;min-width:110px;}
+.flow-item-icon{font-size:22px;margin-bottom:4px;}
+.flow-item-label{font-size:11px;font-weight:700;}
+.flow-arrow{font-size:18px;color:var(--muted);padding:0 8px;}
+
+/* URL input */
+.url-input-demo{background:var(--surface2);border:1px solid var(--accent);border-radius:10px;padding:14px 18px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--accent2);width:100%;margin:10px 0;direction:ltr;text-align:left;}
+
+/* badge */
+.badge{display:inline-flex;align-items:center;gap:5px;border-radius:20px;padding:3px 10px;font-size:11px;font-weight:700;}
+.badge-green{background:rgba(34,197,94,.15);color:var(--green);border:1px solid rgba(34,197,94,.3);}
+.badge-blue{background:rgba(59,130,246,.15);color:var(--accent2);border:1px solid rgba(59,130,246,.3);}
+.badge-yellow{background:rgba(245,158,11,.15);color:var(--accent);border:1px solid rgba(245,158,11,.3);}
+
+.divider{height:1px;background:var(--border);margin:28px 0;}
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>ربط النظام مع <span>Google Sheets</span></h1>
+<div class="subtitle">دليل خطوة بخطوة — 15 دقيقة وخلاص ✅</div>
+
+<!-- FLOW DIAGRAM -->
+<div class="flow">
+  <div class="flow-item"><div class="flow-item-icon">💻</div><div class="flow-item-label">النظام (HTML)</div></div>
+  <div class="flow-arrow">←→</div>
+  <div class="flow-item" style="border-color:var(--accent2)"><div class="flow-item-icon">⚙️</div><div class="flow-item-label">Apps Script (API)</div></div>
+  <div class="flow-arrow">←→</div>
+  <div class="flow-item" style="border-color:var(--accent3)"><div class="flow-item-icon">📊</div><div class="flow-item-label">Google Sheets</div></div>
+</div>
+
+<!-- ════ STEP 1 ════ -->
+<div class="step">
+  <div class="step-num">1</div>
+  <div class="step-title">إنشاء Google Sheet بالشكل الصح</div>
+  <div class="step-sub">افتح Google Sheets وأنشئ ملف جديد. اسمه مثلاً "مخزون قطع الغيار"</div>
+
+  <div class="instr"><div class="instr-num">1</div><div class="instr-text">اذهب إلى <b>sheets.google.com</b> وسجّل دخول بحساب Google</div></div>
+  <div class="instr"><div class="instr-num">2</div><div class="instr-text">اضغط على <b>+ ملف جديد فارغ</b></div></div>
+  <div class="instr"><div class="instr-num">3</div><div class="instr-text">سمّ الملف: <code>مخزون قطع الغيار</code></div></div>
+  <div class="instr"><div class="instr-num">4</div><div class="instr-text">في الشيت الأول (Sheet1)، أضف هذه العناوين <b>بنفس الترتيب</b> في الصف الأول:</div></div>
+
+  <div class="sheets-preview">
+    <div class="sheets-header">
+      <div class="sheets-dot" style="background:#ef4444"></div>
+      <div class="sheets-dot" style="background:#f59e0b"></div>
+      <div class="sheets-dot" style="background:#22c55e"></div>
+      <div class="sheets-title">مخزون قطع الغيار — Sheet1 (parts)</div>
+    </div>
+    <div style="overflow-x:auto">
+    <table class="sheets-table">
+      <tr>
+        <th>A</th><th>B</th><th>C</th><th>D</th><th>E</th><th>F</th><th>G</th><th>H</th><th>I</th><th>J</th><th>K</th><th>L</th>
+      </tr>
+      <tr>
+        <td class="filled" style="background:rgba(245,158,11,.1);color:var(--accent);font-weight:700">id</td>
+        <td class="filled" style="background:rgba(245,158,11,.1);color:var(--accent);font-weight:700">num</td>
+        <td class="filled" style="background:rgba(245,158,11,.1);color:var(--accent);font-weight:700">name</td>
+        <td class="filled" style="background:rgba(245,158,11,.1);color:var(--accent);font-weight:700">cat</td>
+        <td class="filled" style="background:rgba(245,158,11,.1);color:var(--accent);font-weight:700">brand</td>
+        <td class="filled" style="background:rgba(245,158,11,.1);color:var(--accent);font-weight:700">price</td>
+        <td class="filled" style="background:rgba(245,158,11,.1);color:var(--accent);font-weight:700">qty</td>
+        <td class="filled" style="background:rgba(245,158,11,.1);color:var(--accent);font-weight:700">beltType</td>
+        <td class="filled" style="background:rgba(245,158,11,.1);color:var(--accent);font-weight:700">dims</td>
+        <td class="filled" style="background:rgba(245,158,11,.1);color:var(--accent);font-weight:700">fitment</td>
+        <td class="filled" style="background:rgba(245,158,11,.1);color:var(--accent);font-weight:700">img</td>
+        <td class="filled" style="background:rgba(245,158,11,.1);color:var(--accent);font-weight:700">notes</td>
+      </tr>
+      <tr>
+        <td class="num">1001</td>
+        <td class="num">0451103079</td>
+        <td class="filled">فلتر زيت بوش</td>
+        <td class="filled">قطع محرك</td>
+        <td class="filled">BOSCH</td>
+        <td class="filled">8.5</td>
+        <td class="filled">15</td>
+        <td></td>
+        <td class="num">{"length":76,"width":76}</td>
+        <td class="num">[{"make":"تويوتا","model":"كامري"}]</td>
+        <td></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td class="num">1002</td>
+        <td class="num">A-42</td>
+        <td class="filled">قشاطة A-42</td>
+        <td class="filled">قشاطات</td>
+        <td class="filled">Gates</td>
+        <td class="filled">6.5</td>
+        <td class="filled">12</td>
+        <td class="filled">A</td>
+        <td class="num">{"length":1067,"width":13}</td>
+        <td class="num">[{"make":"تويوتا","model":"كورولا"}]</td>
+        <td></td>
+        <td></td>
+      </tr>
+    </table>
+    </div>
+  </div>
+
+  <div class="tip"><span class="tip-icon">💡</span> عمودا <b>dims</b> و<b>fitment</b> بيحفظوا البيانات كـ JSON — ما تحتاج تفهمهم، النظام بيتعامل معهم تلقائياً</div>
+</div>
+
+<!-- ════ STEP 2 ════ -->
+<div class="step">
+  <div class="step-num">2</div>
+  <div class="step-title">إضافة كود Apps Script</div>
+  <div class="step-sub">هاد الكود يحوّل Google Sheets إلى API — يعني النظام يقدر يقرأ ويكتب البيانات منه</div>
+
+  <div class="instr"><div class="instr-num">1</div><div class="instr-text">في Google Sheets، اضغط على قائمة <b>Extensions</b> (الإضافات)</div></div>
+  <div class="instr"><div class="instr-num">2</div><div class="instr-text">اختر <b>Apps Script</b></div></div>
+  <div class="instr"><div class="instr-num">3</div><div class="instr-text"><b>احذف كل الكود</b> الموجود (Ctrl+A ثم Delete)</div></div>
+  <div class="instr"><div class="instr-num">4</div><div class="instr-text"><b>انسخ والصق</b> الكود التالي كامل:</div></div>
+
+  <div class="code-block">
+    <div class="code-header">
+      <span class="code-lang">Google Apps Script (JavaScript)</span>
+      <button class="copy-btn" onclick="copyCode('appsScript')">نسخ الكود</button>
+    </div>
+    <pre id="appsScript"><span class="hl-gray">// ═══════════════════════════════════════════
+// نظام قطع الغيار — Google Apps Script API
+// انسخ هذا الكود كاملاً في Apps Script
+// ═══════════════════════════════════════════</span>
+
+<span class="hl-purple">const</span> <span class="hl-yellow">SHEET_NAME</span> = <span class="hl-green">'parts'</span>;
+
+<span class="hl-gray">// نقطة الدخول الرئيسية — تعالج كل الطلبات</span>
+<span class="hl-blue">function</span> <span class="hl-yellow">doGet</span>(e) {
+  <span class="hl-purple">const</span> action = e.parameter.action;
+  <span class="hl-purple">let</span> result;
+
+  <span class="hl-purple">if</span> (action === <span class="hl-green">'getAll'</span>) {
+    result = getAllParts();
+  } <span class="hl-purple">else if</span> (action === <span class="hl-green">'search'</span>) {
+    result = searchPart(e.parameter.q);
+  } <span class="hl-purple">else</span> {
+    result = { error: <span class="hl-green">'action غير معروف'</span> };
+  }
+
+  <span class="hl-purple">return</span> ContentService
+    .createTextOutput(JSON.stringify(result))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+<span class="hl-gray">// يعالج الإضافة والتعديل والحذف</span>
+<span class="hl-blue">function</span> <span class="hl-yellow">doPost</span>(e) {
+  <span class="hl-purple">const</span> data = JSON.parse(e.postData.contents);
+  <span class="hl-purple">const</span> action = data.action;
+  <span class="hl-purple">let</span> result;
+
+  <span class="hl-purple">if</span> (action === <span class="hl-green">'add'</span>) {
+    result = addPart(data.part);
+  } <span class="hl-purple">else if</span> (action === <span class="hl-green">'update'</span>) {
+    result = updatePart(data.part);
+  } <span class="hl-purple">else if</span> (action === <span class="hl-green">'delete'</span>) {
+    result = deletePart(data.id);
+  } <span class="hl-purple">else</span> {
+    result = { error: <span class="hl-green">'action غير معروف'</span> };
+  }
+
+  <span class="hl-purple">return</span> ContentService
+    .createTextOutput(JSON.stringify(result))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+<span class="hl-gray">// جلب كل القطع</span>
+<span class="hl-blue">function</span> <span class="hl-yellow">getAllParts</span>() {
+  <span class="hl-purple">const</span> sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
+  <span class="hl-purple">const</span> rows = sheet.getDataRange().getValues();
+  <span class="hl-purple">const</span> headers = rows[<span class="hl-red">0</span>];
+  <span class="hl-purple">const</span> parts = [];
+
+  <span class="hl-purple">for</span> (<span class="hl-purple">let</span> i = <span class="hl-red">1</span>; i &lt; rows.length; i++) {
+    <span class="hl-purple">if</span> (!rows[i][<span class="hl-red">0</span>]) <span class="hl-purple">continue</span>; <span class="hl-gray">// تخطي الصفوف الفارغة</span>
+    <span class="hl-purple">const</span> part = {};
+    headers.forEach((h, j) => {
+      <span class="hl-purple">let</span> val = rows[i][j];
+      <span class="hl-gray">// تحويل JSON strings إلى objects</span>
+      <span class="hl-purple">if</span> ((h === <span class="hl-green">'dims'</span> || h === <span class="hl-green">'fitment'</span>) && <span class="hl-purple">typeof</span> val === <span class="hl-green">'string'</span> && val) {
+        <span class="hl-purple">try</span> { val = JSON.parse(val); } <span class="hl-purple">catch</span>(e) { val = h === <span class="hl-green">'fitment'</span> ? [] : {}; }
+      }
+      part[h] = val;
+    });
+    parts.push(part);
+  }
+  <span class="hl-purple">return</span> { success: <span class="hl-purple">true</span>, data: parts };
+}
+
+<span class="hl-gray">// إضافة قطعة جديدة</span>
+<span class="hl-blue">function</span> <span class="hl-yellow">addPart</span>(part) {
+  <span class="hl-purple">const</span> sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
+  <span class="hl-purple">const</span> headers = sheet.getRange(<span class="hl-red">1</span>, <span class="hl-red">1</span>, <span class="hl-red">1</span>, sheet.getLastColumn()).getValues()[<span class="hl-red">0</span>];
+
+  <span class="hl-gray">// توليد ID جديد</span>
+  part.id = Date.now();
+
+  <span class="hl-purple">const</span> row = headers.map(h => {
+    <span class="hl-purple">let</span> val = part[h] ?? <span class="hl-green">''</span>;
+    <span class="hl-gray">// تحويل objects إلى JSON strings للحفظ</span>
+    <span class="hl-purple">if</span> (<span class="hl-purple">typeof</span> val === <span class="hl-green">'object'</span> && val !== <span class="hl-purple">null</span>) val = JSON.stringify(val);
+    <span class="hl-purple">return</span> val;
+  });
+
+  sheet.appendRow(row);
+  <span class="hl-purple">return</span> { success: <span class="hl-purple">true</span>, id: part.id, message: <span class="hl-green">'تمت الإضافة'</span> };
+}
+
+<span class="hl-gray">// تعديل قطعة موجودة</span>
+<span class="hl-blue">function</span> <span class="hl-yellow">updatePart</span>(part) {
+  <span class="hl-purple">const</span> sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
+  <span class="hl-purple">const</span> data = sheet.getDataRange().getValues();
+  <span class="hl-purple">const</span> headers = data[<span class="hl-red">0</span>];
+
+  <span class="hl-purple">for</span> (<span class="hl-purple">let</span> i = <span class="hl-red">1</span>; i &lt; data.length; i++) {
+    <span class="hl-purple">if</span> (String(data[i][<span class="hl-red">0</span>]) === String(part.id)) {
+      <span class="hl-purple">const</span> row = headers.map(h => {
+        <span class="hl-purple">let</span> val = part[h] ?? <span class="hl-green">''</span>;
+        <span class="hl-purple">if</span> (<span class="hl-purple">typeof</span> val === <span class="hl-green">'object'</span> && val !== <span class="hl-purple">null</span>) val = JSON.stringify(val);
+        <span class="hl-purple">return</span> val;
+      });
+      sheet.getRange(i + <span class="hl-red">1</span>, <span class="hl-red">1</span>, <span class="hl-red">1</span>, row.length).setValues([row]);
+      <span class="hl-purple">return</span> { success: <span class="hl-purple">true</span>, message: <span class="hl-green">'تم التحديث'</span> };
+    }
+  }
+  <span class="hl-purple">return</span> { error: <span class="hl-green">'القطعة غير موجودة'</span> };
+}
+
+<span class="hl-gray">// حذف قطعة</span>
+<span class="hl-blue">function</span> <span class="hl-yellow">deletePart</span>(id) {
+  <span class="hl-purple">const</span> sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
+  <span class="hl-purple">const</span> data = sheet.getDataRange().getValues();
+
+  <span class="hl-purple">for</span> (<span class="hl-purple">let</span> i = <span class="hl-red">1</span>; i &lt; data.length; i++) {
+    <span class="hl-purple">if</span> (String(data[i][<span class="hl-red">0</span>]) === String(id)) {
+      sheet.deleteRow(i + <span class="hl-red">1</span>);
+      <span class="hl-purple">return</span> { success: <span class="hl-purple">true</span>, message: <span class="hl-green">'تم الحذف'</span> };
+    }
+  }
+  <span class="hl-purple">return</span> { error: <span class="hl-green">'القطعة غير موجودة'</span> };
+}
+
+<span class="hl-gray">// بحث عن قطعة</span>
+<span class="hl-blue">function</span> <span class="hl-yellow">searchPart</span>(q) {
+  <span class="hl-purple">const</span> all = getAllParts();
+  <span class="hl-purple">if</span> (!all.success) <span class="hl-purple">return</span> all;
+  <span class="hl-purple">const</span> ql = q.toLowerCase();
+  <span class="hl-purple">const</span> results = all.data.filter(p =>
+    String(p.num).toLowerCase().includes(ql) ||
+    String(p.name).includes(q) ||
+    (p.dims && p.dims.altcode && String(p.dims.altcode).toLowerCase().includes(ql))
+  );
+  <span class="hl-purple">return</span> { success: <span class="hl-purple">true</span>, data: results };
+}</pre>
+  </div>
+
+  <div class="instr"><div class="instr-num">5</div><div class="instr-text">بعد اللصق، اضغط <b>💾 Save</b> (أو Ctrl+S)</div></div>
+</div>
+
+<!-- ════ STEP 3 ════ -->
+<div class="step">
+  <div class="step-num">3</div>
+  <div class="step-title">نشر الكود كـ Web App</div>
+  <div class="step-sub">هاد الخطوة تحوّل الكود إلى رابط API تستخدمه في نظامك</div>
+
+  <div class="instr"><div class="instr-num">1</div><div class="instr-text">في Apps Script، اضغط على زر <b>Deploy</b> (النشر) في أعلى اليمين</div></div>
+  <div class="instr"><div class="instr-num">2</div><div class="instr-text">اختر <b>New deployment</b> (نشر جديد)</div></div>
+  <div class="instr"><div class="instr-num">3</div><div class="instr-text">في <b>Type</b>، اختر <b>Web app</b></div></div>
+  <div class="instr"><div class="instr-num">4</div><div class="instr-text">في <b>Execute as</b>: اختر <code>Me</code></div></div>
+  <div class="instr"><div class="instr-num">5</div><div class="instr-text">في <b>Who has access</b>: اختر <code>Anyone</code> ⬅️ <b>مهم جداً!</b></div></div>
+  <div class="instr"><div class="instr-num">6</div><div class="instr-text">اضغط <b>Deploy</b> ثم <b>Authorize access</b> واسمح للكود يشتغل</div></div>
+  <div class="instr"><div class="instr-num">7</div><div class="instr-text"><b>انسخ الـ Web app URL</b> — يشبه هيك:</div></div>
+
+  <input class="url-input-demo" readonly value="https://script.google.com/macros/s/AKfycbxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx/exec">
+
+  <div class="tip warn"><span class="tip-icon">⚠️</span> <b>لا تشارك هاد الرابط مع أحد خارج المحل</b> — من عنده الرابط يقدر يقرأ بياناتك</div>
+</div>
+
+<!-- ════ STEP 4 ════ -->
+<div class="step">
+  <div class="step-num">4</div>
+  <div class="step-title">ربط النظام بالرابط</div>
+  <div class="step-sub">الخطوة الأخيرة — تحط الرابط في ملف نظام قطع الغيار</div>
+
+  <div class="instr"><div class="instr-num">1</div><div class="instr-text">افتح ملف <b>auto-parts-v5.html</b> (النسخة المحدثة المرفقة)</div></div>
+  <div class="instr"><div class="instr-num">2</div><div class="instr-text">في أعلى الكود ابحث عن السطر: <code>const API_URL = '';</code></div></div>
+  <div class="instr"><div class="instr-num">3</div><div class="instr-text">الصق رابط الـ Web App بين علامتي التنصيص</div></div>
+  <div class="instr"><div class="instr-num">4</div><div class="instr-text">احفظ الملف — <b>خلاص! النظام الآن متصل بـ Google Sheets</b> 🎉</div></div>
+
+  <div class="code-block">
+    <div class="code-header">
+      <span class="code-lang">في ملف النظام — السطر اللي تعدله</span>
+      <button class="copy-btn" onclick="copyCode('apiLine')">نسخ</button>
+    </div>
+    <pre id="apiLine"><span class="hl-gray">// ← حط رابط Apps Script هنا</span>
+<span class="hl-purple">const</span> <span class="hl-yellow">API_URL</span> = <span class="hl-green">'https://script.google.com/macros/s/AKfycb.../exec'</span>;
+
+<span class="hl-gray">// بعد ما تحط الرابط، النظام بيشتغل كالتالي:</span>
+<span class="hl-gray">// ✅ يجلب كل القطع من Google Sheets عند فتح النظام</span>
+<span class="hl-gray">// ✅ يحفظ القطع الجديدة في Google Sheets مباشرة</span>
+<span class="hl-gray">// ✅ التعديلات والحذف تنعكس فوراً على كل الأجهزة</span></pre>
+  </div>
+
+  <div class="tip info"><span class="tip-icon">ℹ️</span> أول ما تفتح النظام، سيسألك تأذن للوصول إلى Google — اضغط <b>Allow</b></div>
+</div>
+
+<!-- ════ SUMMARY ════ -->
+<div class="step" style="border-color:rgba(16,185,129,.3);background:rgba(16,185,129,.04)">
+  <div style="font-size:18px;font-weight:900;margin-bottom:16px;color:var(--accent3)">✅ بعد ما تخلص — شو بيصير</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px">
+      <div style="font-size:13px;font-weight:700;margin-bottom:6px">📱 أولادك في المحل</div>
+      <div style="font-size:12px;color:var(--dim);line-height:1.7">يفتحون الملف من الجوال، يضيفون قطعة، تظهر فوراً لباقي الجهاز</div>
+    </div>
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px">
+      <div style="font-size:13px;font-weight:700;margin-bottom:6px">👨‍💼 أنت من أي مكان</div>
+      <div style="font-size:12px;color:var(--dim);line-height:1.7">تفتح Google Sheets وتشوف كل المخزون، تعدل الأسعار مباشرة</div>
+    </div>
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px">
+      <div style="font-size:13px;font-weight:700;margin-bottom:6px">💾 البيانات محفوظة</div>
+      <div style="font-size:12px;color:var(--dim);line-height:1.7">حتى لو انطفأ الجهاز أو انحذف الملف، البيانات موجودة في Google</div>
+    </div>
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px">
+      <div style="font-size:13px;font-weight:700;margin-bottom:6px">🆓 مجاني 100%</div>
+      <div style="font-size:12px;color:var(--dim);line-height:1.7">Google Sheets وApps Script مجانيان تماماً بدون أي رسوم</div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /container -->
+
+<script>
+function copyCode(id){
+  const el=document.getElementById(id);
+  const text=el.innerText;
+  navigator.clipboard.writeText(text).then(()=>{
+    const btn=el.closest('.code-block').querySelector('.copy-btn');
+    btn.textContent='✅ تم النسخ!';btn.classList.add('copied');
+    setTimeout(()=>{btn.textContent='نسخ الكود';btn.classList.remove('copied');},2000);
+  });
+}
+</script>
+</body>
+</html>
