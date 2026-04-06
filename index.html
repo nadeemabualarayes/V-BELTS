@@ -2380,20 +2380,65 @@
     // ══════════════════
     // GOOGLE SHEETS API
     // ══════════════════
+    function makeCallbackName() {
+      return 'gsapi_cb_' + Date.now() + '_' + Math.random().toString(36).slice(2);
+    }
+
+    function jsonpRequest(params) {
+      return new Promise((resolve, reject) => {
+        const callback = makeCallbackName();
+        const script = document.createElement('script');
+        const query = new URLSearchParams({ ...params, callback });
+        const sep = API_URL.includes('?') ? '&' : '?';
+        const timeout = setTimeout(() => {
+          cleanup();
+          reject(new Error('JSONP timeout'));
+        }, 15000);
+
+        function cleanup() {
+          clearTimeout(timeout);
+          delete window[callback];
+          script.remove();
+        }
+
+        window[callback] = data => {
+          cleanup();
+          resolve(data);
+        };
+
+        script.onerror = () => {
+          cleanup();
+          reject(new Error('JSONP load failed'));
+        };
+
+        script.src = API_URL + sep + query.toString();
+        document.body.appendChild(script);
+      });
+    }
+
+    function submitToSheets(payload) {
+      if (!API_URL) return Promise.reject(new Error('Missing API URL'));
+      return fetch(API_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(payload)
+      }).then(() => ({ success: true }));
+    }
+
     async function loadFromSheets() {
       if (!API_URL) { openSetup(); return; }
       setConnected(false, 'جاري الاتصال...');
       document.getElementById('loadingScreen').classList.add('show');
       try {
-        const r = await fetch(API_URL + '?action=getAll');
-        const data = await r.json();
+        const data = await jsonpRequest({ action: 'getAll' });
         if (data.success) {
           DB = data.data.map(normalizePart);
           setConnected(true, '✓ Google Sheets');
           document.getElementById('lastSync').textContent = 'آخر تحديث: ' + new Date().toLocaleTimeString('ar');
           toast('✅ تم تحميل ' + DB.length + ' قطعة من Google Sheets', 'var(--accent3)');
         } else {
-          throw new Error(data.error);
+          throw new Error(data.error || 'Unknown error');
         }
       } catch (e) {
         setConnected(false, 'خطأ في الاتصال');
@@ -2413,18 +2458,12 @@
       }
       setSyncing(true);
       try {
-        const r = await fetch(API_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'add', part })
-        });
-        const data = await r.json();
-        if (data.success) {
-          part.id = data.id;
-          DB.push(part);
-          refreshAll();
-          toast('✅ تم الحفظ في Google Sheets!', 'var(--accent3)');
-        } else { throw new Error(data.error); }
+        part.id = part.id || Date.now();
+        await submitToSheets({ action: 'add', part });
+        DB.push(part);
+        refreshAll();
+        toast('✅ تم إرسال الحفظ إلى Google Sheets', 'var(--accent3)');
+        setTimeout(loadFromSheets, 1500);
       } catch (e) {
         toast('❌ خطأ في الحفظ — جرب مرة ثانية', 'var(--danger)');
       }
@@ -2441,32 +2480,43 @@
       }
       setSyncing(true);
       try {
-        await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'update', part }) });
+        await submitToSheets({ action: 'update', part });
         const i = DB.findIndex(p => p.id === part.id);
         if (i >= 0) DB[i] = part;
         refreshAll();
         toast('✅ تم التحديث في Google Sheets', 'var(--accent3)');
-      } catch (e) { toast('❌ خطأ في التحديث', 'var(--danger)'); }
+        setTimeout(loadFromSheets, 1500);
+      } catch (e) {
+        toast('❌ خطأ في التحديث', 'var(--danger)');
+      }
       setSyncing(false);
     }
 
     async function deleteInSheets(id) {
-      if (!API_URL || !isConnected) { DB = DB.filter(p => p.id !== id); refreshAll(); toast('🗑️ تم الحذف محلياً'); return; }
+      if (!API_URL || !isConnected) {
+        DB = DB.filter(p => p.id !== id);
+        refreshAll();
+        toast('🗑️ تم الحذف محلياً');
+        return;
+      }
       setSyncing(true);
       try {
-        await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'delete', id }) });
+        await submitToSheets({ action: 'delete', id });
         DB = DB.filter(p => p.id !== id);
         refreshAll();
         toast('🗑️ تم الحذف من Google Sheets');
-      } catch (e) { toast('❌ خطأ في الحذف', 'var(--danger)'); }
+        setTimeout(loadFromSheets, 1500);
+      } catch (e) {
+        toast('❌ خطأ في الحذف', 'var(--danger)');
+      }
       setSyncing(false);
     }
 
     function setSyncing(v) {
       const d = document.getElementById('syncDot');
       const t = document.getElementById('syncTxt');
-      d.className = 'sync-dot' + (v ? ' syncing' : '');
-      t.textContent = v ? 'جاري المزامنة مع Google Sheets...' : 'البيانات محفوظة في Google Sheets';
+      if (d) d.className = 'sync-dot' + (v ? ' syncing' : '');
+      if (t) t.textContent = v ? 'جاري المزامنة مع Google Sheets...' : 'البيانات محفوظة في Google Sheets';
     }
 
     function normalizePart(p) {
@@ -2476,6 +2526,7 @@
       if (!p.dims) p.dims = {};
       return p;
     }
+
 
     // ══════════════════
     // TABS
@@ -2705,92 +2756,6 @@
       document.getElementById('addNum').value = '';
       document.getElementById('addImgPrev').style.display = 'none';
       document.getElementById('addRecog').style.display = 'none';
-      // Final clean overrides to avoid mojibake in some environments.
-      loadFromSheets = async function () {
-        if (!API_URL) { openSetup(); return; }
-        setConnected(false, '\u062c\u0627\u0631\u064a \u0627\u0644\u0627\u062a\u0635\u0627\u0644...');
-        document.getElementById('loadingScreen').classList.add('show');
-        try {
-          const data = await jsonpRequest({ action: 'getAll' });
-          if (data.success) {
-            DB = data.data.map(normalizePart);
-            setConnected(true, '\u2713 Google Sheets');
-            document.getElementById('lastSync').textContent = '\u0622\u062e\u0631 \u062a\u062d\u062f\u064a\u062b: ' + new Date().toLocaleTimeString('ar');
-            toast('\u2705 \u062a\u0645 \u062a\u062d\u0645\u064a\u0644 ' + DB.length + ' \u0642\u0637\u0639\u0629 \u0645\u0646 Google Sheets', 'var(--accent3)');
-          } else {
-            throw new Error(data.error);
-          }
-        } catch (e) {
-          setConnected(false, '\u062e\u0637\u0623 \u0641\u064a \u0627\u0644\u0627\u062a\u0635\u0627\u0644');
-          toast('\u274c \u062a\u0639\u0630\u0631 \u0627\u0644\u0627\u062a\u0635\u0627\u0644 - \u062a\u062d\u0642\u0642 \u0645\u0646 \u0627\u0644\u0631\u0627\u0628\u0637 \u0623\u0648 \u0627\u062a\u0635\u0627\u0644\u0643 \u0628\u0627\u0644\u0625\u0646\u062a\u0631\u0646\u062a', 'var(--danger)');
-          if (DB.length === 0) DB = getDemoData();
-        }
-        document.getElementById('loadingScreen').classList.remove('show');
-        refreshAll();
-      };
-
-      saveToSheets = async function (part) {
-        if (!API_URL || !isConnected) {
-          DB.push({ ...part, id: Date.now() });
-          refreshAll();
-          toast('\ud83d\udcbe \u0645\u062d\u0641\u0648\u0638 \u0645\u062d\u0644\u064a\u0627\u064b (\u063a\u064a\u0631 \u0645\u062a\u0635\u0644 \u0628\u0640 Sheets)', 'var(--accent)');
-          return;
-        }
-        setSyncing(true);
-        try {
-          part.id = part.id || Date.now();
-          await submitToSheets({ action: 'add', part });
-          DB.push(part);
-          refreshAll();
-          toast('\u2705 \u062a\u0645 \u0625\u0631\u0633\u0627\u0644 \u0627\u0644\u062d\u0641\u0638 \u0625\u0644\u0649 Google Sheets', 'var(--accent3)');
-          setTimeout(loadFromSheets, 1200);
-        } catch (e) {
-          toast('\u274c \u062e\u0637\u0623 \u0641\u064a \u0627\u0644\u062d\u0641\u0638 - \u062c\u0631\u0628 \u0645\u0631\u0629 \u062b\u0627\u0646\u064a\u0629', 'var(--danger)');
-        }
-        setSyncing(false);
-      };
-
-      updateInSheets = async function (part) {
-        if (!API_URL || !isConnected) {
-          const i = DB.findIndex(p => p.id === part.id);
-          if (i >= 0) DB[i] = part;
-          refreshAll();
-          toast('\ud83d\udcbe \u062a\u0645 \u0627\u0644\u062a\u062d\u062f\u064a\u062b \u0645\u062d\u0644\u064a\u0627\u064b', 'var(--accent)');
-          return;
-        }
-        setSyncing(true);
-        try {
-          await submitToSheets({ action: 'update', part });
-          const i = DB.findIndex(p => p.id === part.id);
-          if (i >= 0) DB[i] = part;
-          refreshAll();
-          toast('\u2705 \u062a\u0645 \u0627\u0644\u062a\u062d\u062f\u064a\u062b \u0641\u064a Google Sheets', 'var(--accent3)');
-          setTimeout(loadFromSheets, 1200);
-        } catch (e) {
-          toast('\u274c \u062e\u0637\u0623 \u0641\u064a \u0627\u0644\u062a\u062d\u062f\u064a\u062b', 'var(--danger)');
-        }
-        setSyncing(false);
-      };
-
-      deleteInSheets = async function (id) {
-        if (!API_URL || !isConnected) {
-          DB = DB.filter(p => p.id !== id);
-          refreshAll();
-          toast('\ud83d\uddd1\ufe0f \u062a\u0645 \u0627\u0644\u062d\u0630\u0641 \u0645\u062d\u0644\u064a\u0627\u064b');
-          return;
-        }
-        setSyncing(true);
-        try {
-          await submitToSheets({ action: 'delete', id });
-          DB = DB.filter(p => p.id !== id);
-          refreshAll();
-          toast('\ud83d\uddd1\ufe0f \u062a\u0645 \u0627\u0644\u062d\u0630\u0641 \u0645\u0646 Google Sheets');
-          setTimeout(loadFromSheets, 1200);
-        } catch (e) {
-          toast('\u274c \u062e\u0637\u0623 \u0641\u064a \u0627\u0644\u062d\u0630\u0641', 'var(--danger)');
-        }
-        setSyncing(false);
-      };
 
       if (API_URL) {
         loadFromSheets();
@@ -2891,138 +2856,6 @@
       ];
     }
 
-    function makeCallbackName() {
-      return 'gsapi_cb_' + Date.now() + '_' + Math.random().toString(36).slice(2);
-    }
-
-    function jsonpRequest(params) {
-      return new Promise((resolve, reject) => {
-        const callback = makeCallbackName();
-        const script = document.createElement('script');
-        const query = new URLSearchParams({ ...params, callback });
-        const sep = API_URL.includes('?') ? '&' : '?';
-        const timeout = setTimeout(() => {
-          cleanup();
-          reject(new Error('JSONP timeout'));
-        }, 15000);
-
-        function cleanup() {
-          clearTimeout(timeout);
-          delete window[callback];
-          script.remove();
-        }
-
-        window[callback] = data => {
-          cleanup();
-          resolve(data);
-        };
-
-        script.onerror = () => {
-          cleanup();
-          reject(new Error('JSONP load failed'));
-        };
-
-        script.src = API_URL + sep + query.toString();
-        document.body.appendChild(script);
-      });
-    }
-
-    function submitToSheets(payload) {
-      if (!API_URL) {
-        return Promise.reject(new Error('Missing API URL'));
-      }
-
-      return fetch(API_URL, {
-        method: 'POST',
-        mode: 'no-cors',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify(payload)
-      }).then(() => ({ success: true }));
-    }
-
-    async function loadFromSheets() {
-      if (!API_URL) { openSetup(); return; }
-      setConnected(false, 'جاري الاتصال...');
-      document.getElementById('loadingScreen').classList.add('show');
-      try {
-        const data = await jsonpRequest({ action: 'getAll' });
-        if (data.success) {
-          DB = data.data.map(normalizePart);
-          setConnected(true, 'âœ“ Google Sheets');
-          document.getElementById('lastSync').textContent = 'خر تحديث:' + new Date().toLocaleTimeString('ar');
-          toast('✅ تم تحميل ' + DB.length + ' قطعة من Google Sheets', 'var(--accent3)');
-        } else {
-          throw new Error(data.error);
-        }
-      } catch (e) {
-        setConnected(false, 'خطأ في الاتصال');
-        toast('❌ تعذر الاتصال — تحقق من الرابط أو اتصالك بالإنترنت', 'var(--danger)');
-        if (DB.length === 0) DB = getDemoData();
-      }
-      document.getElementById('loadingScreen').classList.remove('show');
-      refreshAll();
-    }
-
-    async function saveToSheets(part) {
-      if (!API_URL || !isConnected) {
-        DB.push({ ...part, id: Date.now() });
-        refreshAll();
-        toast('💾 محفوظ محلياً (غير متصل بـ Sheets)', 'var(--accent)'); return;
-      }
-      setSyncing(true);
-      try {
-        part.id = part.id || Date.now();
-        await submitToSheets({ action: 'add', part });
-        DB.push(part);
-        refreshAll();
-        toast('✅ تم إرسال الحفظ إلى Google Sheets', 'var(--accent3)'); setTimeout(loadFromSheets, 1200);
-      } catch (e) {
-        toast('❌ خطأ في الحفظ — جرّب مرة ثانية', 'var(--danger)');
-      }
-      setSyncing(false);
-    }
-
-    async function updateInSheets(part) {
-      if (!API_URL || !isConnected) {
-        const i = DB.findIndex(p => p.id === part.id);
-        if (i >= 0) DB[i] = part;
-        refreshAll();
-        toast('💾 تم التحديث محلياً', 'var(--accent)');
-        return;
-      }
-      setSyncing(true);
-      try {
-        await submitToSheets({ action: 'update', part });
-        const i = DB.findIndex(p => p.id === part.id);
-        if (i >= 0) DB[i] = part;
-        refreshAll();
-        toast('✅ تم التحديث في Google Sheets', 'var(--accent3)');
-        setTimeout(loadFromSheets, 1200);
-      } catch (e) {
-        toast('❌ خطأ في التحديث', 'var(--danger)');
-      }
-      setSyncing(false);
-    }
-
-    async function deleteInSheets(id) {
-      if (!API_URL || !isConnected) {
-        DB = DB.filter(p => p.id !== id);
-        refreshAll();
-        toast('🗑️ تم الحذف محلياً');
-        return;
-      }
-      setSyncing(true);
-      try {
-        await submitToSheets({ action: 'delete', id });
-        DB = DB.filter(p => p.id !== id);
-        refreshAll();
-        toast('🗑️ تم الحذف من Google Sheets');
-        setTimeout(loadFromSheets, 1200);
-      } catch (e) {
-        toast('❌ خطأ في الحذف', 'var(--danger)');
-      }
-      setSyncing(false);
-    }
     // INIT
     if (API_URL) {
       document.getElementById('setupBanner').classList.remove('show');
