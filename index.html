@@ -1,1258 +1,2949 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>نظام قطع الغيار v5 — Google Sheets</title>
-<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
-<style>
-:root{
-  --bg:#0d0f14;--surface:#13161e;--surface2:#1c2030;--surface3:#242840;
-  --border:#2e3348;--accent:#f59e0b;--accent2:#3b82f6;--accent3:#10b981;
-  --danger:#ef4444;--purple:#8b5cf6;--orange:#f97316;
-  --text:#e8eaf0;--muted:#6b7280;--dim:#9ca3af;
-}
-*{margin:0;padding:0;box-sizing:border-box;}
-body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;direction:rtl;}
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>نظام قطع الغيار v5 — Google Sheets</title>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=IBM+Plex+Mono:wght@400;600&display=swap"
+    rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0d0f14;
+      --surface: #13161e;
+      --surface2: #1c2030;
+      --surface3: #242840;
+      --border: #2e3348;
+      --accent: #f59e0b;
+      --accent2: #3b82f6;
+      --accent3: #10b981;
+      --danger: #ef4444;
+      --purple: #8b5cf6;
+      --orange: #f97316;
+      --text: #e8eaf0;
+      --muted: #6b7280;
+      --dim: #9ca3af;
+    }
 
-.header{background:var(--surface);border-bottom:1px solid var(--border);padding:0 20px;display:flex;align-items:center;justify-content:space-between;height:60px;position:sticky;top:0;z-index:200;}
-.logo{display:flex;align-items:center;gap:10px;}
-.logo-icon{width:36px;height:36px;background:var(--accent);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;}
-.logo-text{font-size:16px;font-weight:900;}
-.logo-sub{font-size:10px;color:var(--muted);}
-.hpills{display:flex;gap:8px;align-items:center;}
-.pill{background:var(--surface2);border:1px solid var(--border);border-radius:16px;padding:5px 12px;font-size:12px;display:flex;align-items:center;gap:6px;}
-.dot{width:7px;height:7px;border-radius:50%;}
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
 
-/* CONNECTION STATUS */
-.conn-status{display:flex;align-items:center;gap:7px;padding:5px 14px;border-radius:20px;font-size:12px;font-weight:700;border:1px solid var(--border);cursor:pointer;transition:all .2s;}
-.conn-status.connected{background:rgba(16,185,129,.1);border-color:rgba(16,185,129,.4);color:var(--accent3);}
-.conn-status.disconnected{background:rgba(239,68,68,.1);border-color:rgba(239,68,68,.4);color:var(--danger);}
-.conn-status.connecting{background:rgba(245,158,11,.1);border-color:rgba(245,158,11,.4);color:var(--accent);}
-.conn-dot{width:8px;height:8px;border-radius:50%;}
-.conn-dot.pulse{animation:pulse 1.5s infinite;}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+    body {
+      font-family: 'Cairo', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      direction: rtl;
+    }
 
-.nav{background:var(--surface);border-bottom:1px solid var(--border);display:flex;padding:0 16px;gap:2px;overflow-x:auto;scrollbar-width:none;}
-.nav::-webkit-scrollbar{display:none;}
-.tab{padding:12px 16px;font-size:13px;font-weight:700;color:var(--muted);cursor:pointer;border:none;border-bottom:2px solid transparent;background:none;font-family:'Cairo',sans-serif;display:flex;align-items:center;gap:6px;transition:all .2s;white-space:nowrap;}
-.tab:hover{color:var(--text);}
-.tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+    .header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 60px;
+      position: sticky;
+      top: 0;
+      z-index: 200;
+    }
 
-.main{padding:20px;max-width:1300px;margin:0 auto;}
-.section{display:none;}
-.section.active{display:block;}
-.panel{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:22px;margin-bottom:18px;}
-.panel-title{font-size:15px;font-weight:800;margin-bottom:16px;display:flex;align-items:center;gap:8px;}
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
 
-/* SETUP BANNER */
-.setup-banner{background:linear-gradient(135deg,rgba(245,158,11,.15),rgba(249,115,22,.08));border:1px solid rgba(245,158,11,.4);border-radius:14px;padding:24px;margin-bottom:20px;display:none;}
-.setup-banner.show{display:block;}
-.setup-banner-title{font-size:16px;font-weight:900;margin-bottom:8px;display:flex;align-items:center;gap:8px;}
-.setup-banner-sub{font-size:13px;color:var(--dim);margin-bottom:16px;line-height:1.7;}
-.api-input-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
-.api-input{flex:1;min-width:200px;background:var(--bg);border:2px solid var(--border);border-radius:10px;padding:12px 16px;font-size:13px;color:var(--text);font-family:'IBM Plex Mono',monospace;direction:ltr;}
-.api-input:focus{outline:none;border-color:var(--accent);}
+    .logo-icon {
+      width: 36px;
+      height: 36px;
+      background: var(--accent);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+    }
 
-.btn{padding:10px 18px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;border:none;font-family:'Cairo',sans-serif;transition:all .2s;display:inline-flex;align-items:center;gap:7px;}
-.btn-primary{background:var(--accent);color:#000;}
-.btn-primary:hover{background:#d97706;transform:translateY(-1px);}
-.btn-secondary{background:var(--surface2);color:var(--text);border:1px solid var(--border);}
-.btn-secondary:hover{border-color:var(--accent);color:var(--accent);}
-.btn-success{background:var(--accent3);color:#000;}
-.btn-purple{background:var(--purple);color:#fff;}
-.btn-orange{background:var(--orange);color:#fff;}
-.btn-danger{background:var(--danger);color:#fff;}
-.btn-sm{padding:7px 13px;font-size:12px;}
-.btn:disabled{opacity:.4;cursor:not-allowed;transform:none!important;}
+    .logo-text {
+      font-size: 16px;
+      font-weight: 900;
+    }
 
-.fgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
-.fg{display:flex;flex-direction:column;gap:6px;}
-.fg.full{grid-column:1/-1;}
-label{font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.5px;}
-input,select,textarea{background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:11px 14px;font-size:14px;color:var(--text);font-family:'Cairo',sans-serif;transition:border-color .2s;width:100%;}
-input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);}
-textarea{resize:vertical;min-height:80px;}
+    .logo-sub {
+      font-size: 10px;
+      color: var(--muted);
+    }
 
-/* LOADING STATE */
-.loading-screen{display:none;flex-direction:column;align-items:center;justify-content:center;padding:60px 20px;text-align:center;}
-.loading-screen.show{display:flex;}
-.big-spinner{width:52px;height:52px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin-bottom:18px;}
-@keyframes spin{to{transform:rotate(360deg)}}
-.loading-title{font-size:16px;font-weight:800;margin-bottom:6px;}
-.loading-sub{font-size:13px;color:var(--muted);}
+    .hpills {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
 
-/* SEARCH */
-.search-hero{background:linear-gradient(135deg,var(--surface),var(--surface2));border:1px solid var(--border);border-radius:16px;padding:28px;margin-bottom:18px;}
-.search-title{font-size:20px;font-weight:900;margin-bottom:5px;}
-.search-title span{color:var(--accent);}
-.search-methods{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;}
-.sm{background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:14px;cursor:pointer;transition:all .2s;text-align:center;}
-.sm:hover,.sm.active{border-color:var(--accent);background:rgba(245,158,11,.06);}
-.sm-icon{font-size:26px;margin-bottom:5px;}
-.sm-lbl{font-size:12px;font-weight:700;}
-.sm-sub{font-size:10px;color:var(--muted);margin-top:2px;}
-.sp{display:none;}
-.sp.active{display:block;}
-.srch-row{display:flex;gap:10px;}
-.srch-in{flex:1;background:var(--bg);border:2px solid var(--border);border-radius:11px;padding:13px 16px;font-size:14px;color:var(--text);font-family:'Cairo',sans-serif;transition:border-color .2s;direction:ltr;text-align:center;letter-spacing:1px;}
-.srch-in:focus{outline:none;border-color:var(--accent);}
-.srch-in::placeholder{letter-spacing:0;direction:rtl;font-size:13px;}
-.demo-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;}
-.dchip{background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:5px 13px;font-size:11px;color:var(--dim);cursor:pointer;font-family:'Cairo',sans-serif;transition:all .2s;}
-.dchip:hover{border-color:var(--accent);color:var(--accent);}
+    .pill {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 5px 12px;
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
 
-/* IMAGE SEARCH */
-.img-search-area{border:2px dashed var(--border);border-radius:14px;padding:0;text-align:center;transition:all .3s;position:relative;overflow:hidden;background:var(--surface2);min-height:180px;display:flex;flex-direction:column;align-items:center;justify-content:center;}
-.img-search-area.has-img{border-style:solid;border-color:var(--accent);}
-.img-search-area.analyzing{border-color:var(--purple);}
-.isa-placeholder{padding:28px 20px;}
-.isa-icon{font-size:38px;margin-bottom:8px;}
-.isa-title{font-size:14px;font-weight:800;margin-bottom:5px;}
-.isa-sub{font-size:12px;color:var(--muted);margin-bottom:14px;}
-#srchImgPreview{width:100%;max-height:220px;object-fit:contain;border-radius:12px;}
-.ai-analysis{background:var(--surface2);border:1px solid rgba(139,92,246,.4);border-radius:12px;padding:18px;margin-top:12px;display:none;animation:fadeUp .3s;}
-.ai-analysis.show{display:block;}
-@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
-.ai-badge{display:inline-flex;align-items:center;gap:5px;background:rgba(139,92,246,.15);color:var(--purple);border:1px solid rgba(139,92,246,.3);border-radius:20px;padding:3px 10px;font-size:11px;font-weight:700;margin-bottom:8px;}
-.ai-pname{font-size:17px;font-weight:900;margin-bottom:4px;}
-.ai-info{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px;}
-.ai-box{background:var(--surface3);border:1px solid var(--border);border-radius:8px;padding:9px 12px;}
-.ai-box-l{font-size:10px;color:var(--muted);margin-bottom:2px;}
-.ai-box-v{font-size:12px;font-weight:700;}
-.ai-matches-title{font-size:12px;font-weight:800;color:var(--accent);margin-bottom:8px;}
-.ai-match{background:var(--surface3);border:1px solid var(--border);border-radius:9px;padding:10px 14px;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;}
-.ai-match:hover{border-color:var(--accent3);}
-.ai-match-name{font-size:13px;font-weight:700;}
-.ai-match-num{font-size:10px;font-family:'IBM Plex Mono',monospace;color:var(--accent);margin-top:2px;}
-.ai-match-pct{font-size:11px;font-weight:700;color:var(--accent3);}
-.analyzing-ovl{position:absolute;inset:0;background:rgba(13,15,20,.85);display:none;align-items:center;justify-content:center;flex-direction:column;gap:12px;border-radius:12px;z-index:10;}
-.analyzing-ovl.show{display:flex;}
-.ai-spin{width:40px;height:40px;border:3px solid rgba(139,92,246,.2);border-top-color:var(--purple);border-radius:50%;animation:spin .8s linear infinite;}
-.analyzing-txt{font-size:13px;font-weight:700;color:var(--purple);}
+    .dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+    }
 
-/* RESULT */
-.result-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;overflow:hidden;display:none;animation:fadeUp .3s;margin-top:14px;}
-.result-card.show{display:block;}
-.result-layout{display:grid;grid-template-columns:200px 1fr;}
-.r-img{background:var(--surface2);border-left:1px solid var(--border);display:flex;align-items:center;justify-content:center;padding:18px;min-height:170px;}
-.r-img img{max-width:100%;max-height:140px;object-fit:contain;border-radius:8px;}
-.r-info{padding:18px 22px;}
-.r-name{font-size:18px;font-weight:900;margin:4px 0 3px;}
-.r-num{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--accent);letter-spacing:2px;}
-.irow{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:12px 0;}
-.ibox{background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:10px 14px;}
-.ibox-l{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px;}
-.ibox-v{font-size:16px;font-weight:800;}
-.ibox-v.price{color:var(--accent);}
-.ibox-v.ok{color:var(--accent3);}
-.ibox-v.low{color:var(--accent);}
-.ibox-v.out{color:var(--danger);}
-.dims-row{display:flex;gap:7px;flex-wrap:wrap;margin:10px 0;}
-.dbadge{background:var(--surface3);border:1px solid var(--border);border-radius:7px;padding:4px 10px;font-size:11px;font-weight:700;}
-.dbadge span{color:var(--muted);font-size:10px;font-weight:400;display:block;}
-.compat-title{font-size:13px;font-weight:800;margin-bottom:8px;display:flex;align-items:center;gap:6px;}
-.compat-cnt{background:var(--accent);color:#000;border-radius:20px;padding:1px 8px;font-size:10px;font-weight:900;}
-.compat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:7px;}
-.cc{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 11px;transition:border-color .2s;}
-.cc:hover{border-color:var(--accent);}
-.cc-mk{font-size:9px;color:var(--muted);}
-.cc-mdl{font-size:12px;font-weight:700;}
-.cc-yr{font-size:10px;color:var(--accent);font-family:'IBM Plex Mono',monospace;}
+    /* CONNECTION STATUS */
+    .conn-status {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      padding: 5px 14px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 700;
+      border: 1px solid var(--border);
+      cursor: pointer;
+      transition: all .2s;
+    }
 
-/* ADD FLOW */
-.flow-steps{display:flex;border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:20px;}
-.fs{flex:1;padding:13px 8px;text-align:center;background:var(--surface2);border-left:1px solid var(--border);}
-.fs:first-child{border-left:none;}
-.fs.active{background:var(--surface3);border-bottom:2px solid var(--accent);}
-.fs.done{background:rgba(16,185,129,.08);}
-.fs-n{width:22px;height:22px;border-radius:50%;background:var(--border);display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:900;margin-bottom:4px;}
-.fs.active .fs-n{background:var(--accent);color:#000;}
-.fs.done .fs-n{background:var(--accent3);color:#000;}
-.fs-l{font-size:10px;color:var(--muted);font-weight:600;}
-.fs.active .fs-l{color:var(--text);}
-.astep{display:none;}
-.astep.active{display:block;}
+    .conn-status.connected {
+      background: rgba(16, 185, 129, .1);
+      border-color: rgba(16, 185, 129, .4);
+      color: var(--accent3);
+    }
 
-/* img upload */
-.img-add-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px;}
-.iam{border:2px dashed var(--border);border-radius:12px;padding:18px 10px;text-align:center;cursor:pointer;transition:all .2s;position:relative;overflow:hidden;background:var(--surface2);}
-.iam:hover,.iam.sel{border-color:var(--accent);border-style:solid;background:rgba(245,158,11,.05);}
-.iam input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;}
-.iam-icon{font-size:26px;margin-bottom:6px;}
-.iam-lbl{font-size:12px;font-weight:700;}
-.iam-sub{font-size:10px;color:var(--muted);margin-top:2px;}
+    .conn-status.disconnected {
+      background: rgba(239, 68, 68, .1);
+      border-color: rgba(239, 68, 68, .4);
+      color: var(--danger);
+    }
 
-/* belt */
-.btype-row{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px;}
-.btb{padding:10px;border:1px solid var(--border);border-radius:9px;background:var(--surface2);cursor:pointer;text-align:center;font-size:13px;font-weight:700;font-family:'Cairo',sans-serif;color:var(--muted);transition:all .2s;}
-.btb:hover,.btb.sel{background:rgba(249,115,22,.15);border-color:var(--orange);color:var(--orange);}
-.belt-code-badge{font-family:'IBM Plex Mono',monospace;font-size:18px;font-weight:700;color:var(--orange);background:rgba(249,115,22,.1);border:1px solid rgba(249,115,22,.3);border-radius:8px;padding:7px 14px;display:inline-block;margin:4px 0 12px;}
+    .conn-status.connecting {
+      background: rgba(245, 158, 11, .1);
+      border-color: rgba(245, 158, 11, .4);
+      color: var(--accent);
+    }
 
-/* dims */
-.dgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
-.diw{display:flex;flex-direction:column;gap:4px;}
-.dil{font-size:10px;color:var(--muted);}
-.dir{display:flex;}
-.dir input{border-radius:9px 0 0 9px;border-left:none;flex:1;min-width:0;}
-.dir-u{background:var(--surface3);border:1px solid var(--border);border-right:none;border-radius:0 9px 9px 0;padding:0 10px;display:flex;align-items:center;font-size:11px;color:var(--muted);white-space:nowrap;}
+    .conn-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
 
-/* fitment chips */
-.fit-chips{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:10px;min-height:30px;}
-.fchip{background:var(--surface3);border:1px solid var(--border);border-radius:8px;padding:4px 11px;font-size:11px;font-weight:600;display:inline-flex;align-items:center;gap:5px;cursor:pointer;}
-.fchip:hover{border-color:var(--danger);}
+    .conn-dot.pulse {
+      animation: pulse 1.5s infinite;
+    }
 
-/* table */
-.toolbar{display:flex;gap:10px;align-items:center;margin-bottom:14px;flex-wrap:wrap;}
-.tbl-s{flex:1;min-width:160px;background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:9px 14px;font-size:13px;color:var(--text);font-family:'Cairo',sans-serif;}
-.tbl-s:focus{outline:none;border-color:var(--accent);}
-.fsel{background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:9px 12px;font-size:12px;color:var(--text);font-family:'Cairo',sans-serif;}
-.tw{overflow-x:auto;}
-table{width:100%;border-collapse:collapse;font-size:13px;}
-thead tr{background:var(--surface2);}
-th{padding:10px 12px;text-align:right;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border);}
-td{padding:10px 12px;border-bottom:1px solid rgba(46,51,72,.4);vertical-align:middle;}
-tbody tr:hover{background:var(--surface2);}
-.pnum{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--accent);}
-.sbadge{display:inline-flex;align-items:center;gap:3px;border-radius:6px;padding:3px 8px;font-size:11px;font-weight:700;}
-.sbadge.ok{background:rgba(16,185,129,.15);color:var(--accent3);}
-.sbadge.low{background:rgba(245,158,11,.15);color:var(--accent);}
-.sbadge.out{background:rgba(239,68,68,.15);color:var(--danger);}
-.iBtn{width:28px;height:28px;border-radius:7px;border:1px solid var(--border);background:var(--surface2);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font-size:12px;transition:all .2s;}
-.iBtn:hover{border-color:var(--accent);}
-.thumb{width:42px;height:42px;object-fit:cover;border-radius:7px;border:1px solid var(--border);}
-.no-thumb{width:42px;height:42px;background:var(--surface3);border-radius:7px;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--muted);}
+    @keyframes pulse {
 
-/* belts */
-.belt-sb{background:linear-gradient(135deg,rgba(249,115,22,.1),rgba(245,158,11,.05));border:1px solid rgba(249,115,22,.3);border-radius:14px;padding:22px;margin-bottom:16px;}
-.belt-sb-title{font-size:16px;font-weight:900;margin-bottom:4px;}
-.bsd{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:12px;}
-.belt-results{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;}
-.bcard{background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:15px;cursor:pointer;transition:all .2s;}
-.bcard:hover{border-color:var(--orange);transform:translateY(-2px);}
-.bcard-img-wrap{width:100%;height:70px;background:var(--surface2);border-radius:8px;display:flex;align-items:center;justify-content:center;margin-bottom:8px;font-size:26px;}
-.bcard-code{font-family:'IBM Plex Mono',monospace;font-size:17px;font-weight:700;color:var(--orange);margin-bottom:4px;}
-.bcard-name{font-size:12px;font-weight:700;margin-bottom:7px;}
-.bcard-dims{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:6px;}
-.bdim{background:rgba(249,115,22,.1);border:1px solid rgba(249,115,22,.25);border-radius:5px;padding:2px 7px;font-size:10px;font-weight:700;color:var(--orange);}
-.bcard-type{display:inline-block;background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:2px 7px;font-size:9px;font-weight:700;color:var(--dim);margin-bottom:5px;}
+      0%,
+      100% {
+        opacity: 1
+      }
 
-/* modal */
-.overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);display:none;align-items:flex-start;justify-content:center;z-index:500;backdrop-filter:blur(5px);padding:20px;overflow-y:auto;}
-.overlay.show{display:flex;}
-.modal{background:var(--surface);border:1px solid var(--border);border-radius:18px;width:600px;max-width:96vw;padding:26px;animation:mIn .25s ease;margin:auto;}
-@keyframes mIn{from{opacity:0;transform:scale(.95)}to{opacity:1;transform:scale(1)}}
-.modal-title{font-size:16px;font-weight:900;margin-bottom:16px;}
-.modal-actions{display:flex;gap:10px;margin-top:16px;justify-content:flex-end;}
-.mtabs{display:flex;border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:14px;}
-.mtab{flex:1;padding:8px;text-align:center;font-size:12px;font-weight:700;cursor:pointer;background:var(--surface2);color:var(--muted);font-family:'Cairo',sans-serif;border:none;transition:all .2s;}
-.mtab.active{background:var(--surface3);color:var(--accent);}
-.mtp{display:none;}
-.mtp.active{display:block;}
+      50% {
+        opacity: .3
+      }
+    }
 
-/* kpi */
-.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px;}
-.kpi{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:15px 18px;position:relative;overflow:hidden;}
-.kpi::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;}
-.kpi.am::after{background:var(--accent);}
-.kpi.gr::after{background:var(--accent3);}
-.kpi.bl::after{background:var(--accent2);}
-.kpi.rd::after{background:var(--danger);}
-.kpi.or::after{background:var(--orange);}
-.kpi-l{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;}
-.kpi-v{font-size:26px;font-weight:900;}
-.kpi-s{font-size:10px;color:var(--muted);margin-top:2px;}
+    .nav {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      padding: 0 16px;
+      gap: 2px;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
 
-/* barcode */
-.bc-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
-.bc-label{background:#fff;color:#000;border-radius:10px;padding:16px 20px;text-align:center;display:inline-block;min-width:230px;}
-.bc-shop{font-size:11px;font-weight:900;margin-bottom:1px;}
-.bc-name{font-size:13px;font-weight:700;margin:5px 0;}
-.bc-bars{display:flex;align-items:flex-end;gap:1.5px;height:44px;justify-content:center;margin-bottom:5px;}
-.bar{background:#000;border-radius:1px;}
-.bc-price{font-size:19px;font-weight:900;}
-.bc-num{font-family:'IBM Plex Mono',monospace;font-size:8px;color:#555;margin-top:1px;}
-.bc-dims-lbl{font-size:8px;color:#444;margin-top:1px;}
+    .nav::-webkit-scrollbar {
+      display: none;
+    }
 
-/* sync indicator */
-.sync-row{display:flex;align-items:center;gap:8px;padding:8px 14px;background:var(--surface2);border-radius:8px;font-size:12px;color:var(--muted);margin-bottom:12px;}
-.sync-dot{width:8px;height:8px;border-radius:50%;background:var(--accent3);}
-.sync-dot.syncing{background:var(--accent);animation:pulse 1s infinite;}
+    .tab {
+      padding: 12px 16px;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--muted);
+      cursor: pointer;
+      border: none;
+      border-bottom: 2px solid transparent;
+      background: none;
+      font-family: 'Cairo', sans-serif;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all .2s;
+      white-space: nowrap;
+    }
 
-.tag{display:inline-flex;align-items:center;gap:5px;border-radius:20px;padding:3px 10px;font-size:11px;font-weight:700;margin-bottom:6px;}
-.tag.found{background:rgba(16,185,129,.15);color:var(--accent3);border:1px solid rgba(16,185,129,.3);}
-.tag.warn{background:rgba(245,158,11,.15);color:var(--accent);border:1px solid rgba(245,158,11,.3);}
-.tag.out{background:rgba(239,68,68,.15);color:var(--danger);border:1px solid rgba(239,68,68,.3);}
+    .tab:hover {
+      color: var(--text);
+    }
 
-.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(100px);background:var(--accent3);color:#000;border-radius:11px;padding:12px 22px;font-size:13px;font-weight:700;transition:transform .3s;z-index:9999;font-family:'Cairo',sans-serif;white-space:nowrap;}
-.toast.show{transform:translateX(-50%) translateY(0);}
+    .tab.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+    }
 
-@media(max-width:700px){
-  .hpills{display:none;}
-  .result-layout{grid-template-columns:1fr;}
-  .r-img{border-left:none;border-bottom:1px solid var(--border);}
-  .irow{grid-template-columns:1fr 1fr;}
-  .kpi-row{grid-template-columns:1fr 1fr;}
-  .bc-grid{grid-template-columns:1fr;}
-  .fgrid{grid-template-columns:1fr;}
-  .dgrid{grid-template-columns:1fr 1fr;}
-  .img-add-grid{grid-template-columns:1fr;}
-  .bsd{grid-template-columns:1fr 1fr;}
-  .search-methods{grid-template-columns:1fr 1fr;}
-  .main{padding:12px;}
-}
-</style>
+    .main {
+      padding: 20px;
+      max-width: 1300px;
+      margin: 0 auto;
+    }
+
+    .section {
+      display: none;
+    }
+
+    .section.active {
+      display: block;
+    }
+
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 22px;
+      margin-bottom: 18px;
+    }
+
+    .panel-title {
+      font-size: 15px;
+      font-weight: 800;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* SETUP BANNER */
+    .setup-banner {
+      background: linear-gradient(135deg, rgba(245, 158, 11, .15), rgba(249, 115, 22, .08));
+      border: 1px solid rgba(245, 158, 11, .4);
+      border-radius: 14px;
+      padding: 24px;
+      margin-bottom: 20px;
+      display: none;
+    }
+
+    .setup-banner.show {
+      display: block;
+    }
+
+    .setup-banner-title {
+      font-size: 16px;
+      font-weight: 900;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .setup-banner-sub {
+      font-size: 13px;
+      color: var(--dim);
+      margin-bottom: 16px;
+      line-height: 1.7;
+    }
+
+    .api-input-row {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .api-input {
+      flex: 1;
+      min-width: 200px;
+      background: var(--bg);
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 16px;
+      font-size: 13px;
+      color: var(--text);
+      font-family: 'IBM Plex Mono', monospace;
+      direction: ltr;
+    }
+
+    .api-input:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+
+    .btn {
+      padding: 10px 18px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      border: none;
+      font-family: 'Cairo', sans-serif;
+      transition: all .2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #000;
+    }
+
+    .btn-primary:hover {
+      background: #d97706;
+      transform: translateY(-1px);
+    }
+
+    .btn-secondary {
+      background: var(--surface2);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    .btn-secondary:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .btn-success {
+      background: var(--accent3);
+      color: #000;
+    }
+
+    .btn-purple {
+      background: var(--purple);
+      color: #fff;
+    }
+
+    .btn-orange {
+      background: var(--orange);
+      color: #fff;
+    }
+
+    .btn-danger {
+      background: var(--danger);
+      color: #fff;
+    }
+
+    .btn-sm {
+      padding: 7px 13px;
+      font-size: 12px;
+    }
+
+    .btn:disabled {
+      opacity: .4;
+      cursor: not-allowed;
+      transform: none !important;
+    }
+
+    .fgrid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    .fg {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .fg.full {
+      grid-column: 1/-1;
+    }
+
+    label {
+      font-size: 11px;
+      color: var(--muted);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .5px;
+    }
+
+    input,
+    select,
+    textarea {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      padding: 11px 14px;
+      font-size: 14px;
+      color: var(--text);
+      font-family: 'Cairo', sans-serif;
+      transition: border-color .2s;
+      width: 100%;
+    }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 80px;
+    }
+
+    /* LOADING STATE */
+    .loading-screen {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 60px 20px;
+      text-align: center;
+    }
+
+    .loading-screen.show {
+      display: flex;
+    }
+
+    .big-spinner {
+      width: 52px;
+      height: 52px;
+      border: 3px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin .8s linear infinite;
+      margin-bottom: 18px;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg)
+      }
+    }
+
+    .loading-title {
+      font-size: 16px;
+      font-weight: 800;
+      margin-bottom: 6px;
+    }
+
+    .loading-sub {
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    /* SEARCH */
+    .search-hero {
+      background: linear-gradient(135deg, var(--surface), var(--surface2));
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 28px;
+      margin-bottom: 18px;
+    }
+
+    .search-title {
+      font-size: 20px;
+      font-weight: 900;
+      margin-bottom: 5px;
+    }
+
+    .search-title span {
+      color: var(--accent);
+    }
+
+    .search-methods {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .sm {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px;
+      cursor: pointer;
+      transition: all .2s;
+      text-align: center;
+    }
+
+    .sm:hover,
+    .sm.active {
+      border-color: var(--accent);
+      background: rgba(245, 158, 11, .06);
+    }
+
+    .sm-icon {
+      font-size: 26px;
+      margin-bottom: 5px;
+    }
+
+    .sm-lbl {
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .sm-sub {
+      font-size: 10px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    .sp {
+      display: none;
+    }
+
+    .sp.active {
+      display: block;
+    }
+
+    .srch-row {
+      display: flex;
+      gap: 10px;
+    }
+
+    .srch-in {
+      flex: 1;
+      background: var(--bg);
+      border: 2px solid var(--border);
+      border-radius: 11px;
+      padding: 13px 16px;
+      font-size: 14px;
+      color: var(--text);
+      font-family: 'Cairo', sans-serif;
+      transition: border-color .2s;
+      direction: ltr;
+      text-align: center;
+      letter-spacing: 1px;
+    }
+
+    .srch-in:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+
+    .srch-in::placeholder {
+      letter-spacing: 0;
+      direction: rtl;
+      font-size: 13px;
+    }
+
+    .demo-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+
+    .dchip {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      padding: 5px 13px;
+      font-size: 11px;
+      color: var(--dim);
+      cursor: pointer;
+      font-family: 'Cairo', sans-serif;
+      transition: all .2s;
+    }
+
+    .dchip:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    /* IMAGE SEARCH */
+    .img-search-area {
+      border: 2px dashed var(--border);
+      border-radius: 14px;
+      padding: 0;
+      text-align: center;
+      transition: all .3s;
+      position: relative;
+      overflow: hidden;
+      background: var(--surface2);
+      min-height: 180px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .img-search-area.has-img {
+      border-style: solid;
+      border-color: var(--accent);
+    }
+
+    .img-search-area.analyzing {
+      border-color: var(--purple);
+    }
+
+    .isa-placeholder {
+      padding: 28px 20px;
+    }
+
+    .isa-icon {
+      font-size: 38px;
+      margin-bottom: 8px;
+    }
+
+    .isa-title {
+      font-size: 14px;
+      font-weight: 800;
+      margin-bottom: 5px;
+    }
+
+    .isa-sub {
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 14px;
+    }
+
+    #srchImgPreview {
+      width: 100%;
+      max-height: 220px;
+      object-fit: contain;
+      border-radius: 12px;
+    }
+
+    .ai-analysis {
+      background: var(--surface2);
+      border: 1px solid rgba(139, 92, 246, .4);
+      border-radius: 12px;
+      padding: 18px;
+      margin-top: 12px;
+      display: none;
+      animation: fadeUp .3s;
+    }
+
+    .ai-analysis.show {
+      display: block;
+    }
+
+    @keyframes fadeUp {
+      from {
+        opacity: 0;
+        transform: translateY(8px)
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0)
+      }
+    }
+
+    .ai-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: rgba(139, 92, 246, .15);
+      color: var(--purple);
+      border: 1px solid rgba(139, 92, 246, .3);
+      border-radius: 20px;
+      padding: 3px 10px;
+      font-size: 11px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .ai-pname {
+      font-size: 17px;
+      font-weight: 900;
+      margin-bottom: 4px;
+    }
+
+    .ai-info {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .ai-box {
+      background: var(--surface3);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 9px 12px;
+    }
+
+    .ai-box-l {
+      font-size: 10px;
+      color: var(--muted);
+      margin-bottom: 2px;
+    }
+
+    .ai-box-v {
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .ai-matches-title {
+      font-size: 12px;
+      font-weight: 800;
+      color: var(--accent);
+      margin-bottom: 8px;
+    }
+
+    .ai-match {
+      background: var(--surface3);
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      padding: 10px 14px;
+      cursor: pointer;
+      transition: all .2s;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 6px;
+    }
+
+    .ai-match:hover {
+      border-color: var(--accent3);
+    }
+
+    .ai-match-name {
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .ai-match-num {
+      font-size: 10px;
+      font-family: 'IBM Plex Mono', monospace;
+      color: var(--accent);
+      margin-top: 2px;
+    }
+
+    .ai-match-pct {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--accent3);
+    }
+
+    .analyzing-ovl {
+      position: absolute;
+      inset: 0;
+      background: rgba(13, 15, 20, .85);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 12px;
+      border-radius: 12px;
+      z-index: 10;
+    }
+
+    .analyzing-ovl.show {
+      display: flex;
+    }
+
+    .ai-spin {
+      width: 40px;
+      height: 40px;
+      border: 3px solid rgba(139, 92, 246, .2);
+      border-top-color: var(--purple);
+      border-radius: 50%;
+      animation: spin .8s linear infinite;
+    }
+
+    .analyzing-txt {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--purple);
+    }
+
+    /* RESULT */
+    .result-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      display: none;
+      animation: fadeUp .3s;
+      margin-top: 14px;
+    }
+
+    .result-card.show {
+      display: block;
+    }
+
+    .result-layout {
+      display: grid;
+      grid-template-columns: 200px 1fr;
+    }
+
+    .r-img {
+      background: var(--surface2);
+      border-left: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+      min-height: 170px;
+    }
+
+    .r-img img {
+      max-width: 100%;
+      max-height: 140px;
+      object-fit: contain;
+      border-radius: 8px;
+    }
+
+    .r-info {
+      padding: 18px 22px;
+    }
+
+    .r-name {
+      font-size: 18px;
+      font-weight: 900;
+      margin: 4px 0 3px;
+    }
+
+    .r-num {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 12px;
+      color: var(--accent);
+      letter-spacing: 2px;
+    }
+
+    .irow {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin: 12px 0;
+    }
+
+    .ibox {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      padding: 10px 14px;
+    }
+
+    .ibox-l {
+      font-size: 10px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .5px;
+      margin-bottom: 3px;
+    }
+
+    .ibox-v {
+      font-size: 16px;
+      font-weight: 800;
+    }
+
+    .ibox-v.price {
+      color: var(--accent);
+    }
+
+    .ibox-v.ok {
+      color: var(--accent3);
+    }
+
+    .ibox-v.low {
+      color: var(--accent);
+    }
+
+    .ibox-v.out {
+      color: var(--danger);
+    }
+
+    .dims-row {
+      display: flex;
+      gap: 7px;
+      flex-wrap: wrap;
+      margin: 10px 0;
+    }
+
+    .dbadge {
+      background: var(--surface3);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      padding: 4px 10px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .dbadge span {
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 400;
+      display: block;
+    }
+
+    .compat-title {
+      font-size: 13px;
+      font-weight: 800;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .compat-cnt {
+      background: var(--accent);
+      color: #000;
+      border-radius: 20px;
+      padding: 1px 8px;
+      font-size: 10px;
+      font-weight: 900;
+    }
+
+    .compat-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 7px;
+    }
+
+    .cc {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 11px;
+      transition: border-color .2s;
+    }
+
+    .cc:hover {
+      border-color: var(--accent);
+    }
+
+    .cc-mk {
+      font-size: 9px;
+      color: var(--muted);
+    }
+
+    .cc-mdl {
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .cc-yr {
+      font-size: 10px;
+      color: var(--accent);
+      font-family: 'IBM Plex Mono', monospace;
+    }
+
+    /* ADD FLOW */
+    .flow-steps {
+      display: flex;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      margin-bottom: 20px;
+    }
+
+    .fs {
+      flex: 1;
+      padding: 13px 8px;
+      text-align: center;
+      background: var(--surface2);
+      border-left: 1px solid var(--border);
+    }
+
+    .fs:first-child {
+      border-left: none;
+    }
+
+    .fs.active {
+      background: var(--surface3);
+      border-bottom: 2px solid var(--accent);
+    }
+
+    .fs.done {
+      background: rgba(16, 185, 129, .08);
+    }
+
+    .fs-n {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: var(--border);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      font-weight: 900;
+      margin-bottom: 4px;
+    }
+
+    .fs.active .fs-n {
+      background: var(--accent);
+      color: #000;
+    }
+
+    .fs.done .fs-n {
+      background: var(--accent3);
+      color: #000;
+    }
+
+    .fs-l {
+      font-size: 10px;
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    .fs.active .fs-l {
+      color: var(--text);
+    }
+
+    .astep {
+      display: none;
+    }
+
+    .astep.active {
+      display: block;
+    }
+
+    /* img upload */
+    .img-add-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .iam {
+      border: 2px dashed var(--border);
+      border-radius: 12px;
+      padding: 18px 10px;
+      text-align: center;
+      cursor: pointer;
+      transition: all .2s;
+      position: relative;
+      overflow: hidden;
+      background: var(--surface2);
+    }
+
+    .iam:hover,
+    .iam.sel {
+      border-color: var(--accent);
+      border-style: solid;
+      background: rgba(245, 158, 11, .05);
+    }
+
+    .iam input[type=file] {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+    }
+
+    .iam-icon {
+      font-size: 26px;
+      margin-bottom: 6px;
+    }
+
+    .iam-lbl {
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .iam-sub {
+      font-size: 10px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    /* belt */
+    .btype-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .btb {
+      padding: 10px;
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      background: var(--surface2);
+      cursor: pointer;
+      text-align: center;
+      font-size: 13px;
+      font-weight: 700;
+      font-family: 'Cairo', sans-serif;
+      color: var(--muted);
+      transition: all .2s;
+    }
+
+    .btb:hover,
+    .btb.sel {
+      background: rgba(249, 115, 22, .15);
+      border-color: var(--orange);
+      color: var(--orange);
+    }
+
+    .belt-code-badge {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--orange);
+      background: rgba(249, 115, 22, .1);
+      border: 1px solid rgba(249, 115, 22, .3);
+      border-radius: 8px;
+      padding: 7px 14px;
+      display: inline-block;
+      margin: 4px 0 12px;
+    }
+
+    /* dims */
+    .dgrid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+
+    .diw {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .dil {
+      font-size: 10px;
+      color: var(--muted);
+    }
+
+    .dir {
+      display: flex;
+    }
+
+    .dir input {
+      border-radius: 9px 0 0 9px;
+      border-left: none;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .dir-u {
+      background: var(--surface3);
+      border: 1px solid var(--border);
+      border-right: none;
+      border-radius: 0 9px 9px 0;
+      padding: 0 10px;
+      display: flex;
+      align-items: center;
+      font-size: 11px;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    /* fitment chips */
+    .fit-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      margin-bottom: 10px;
+      min-height: 30px;
+    }
+
+    .fchip {
+      background: var(--surface3);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 4px 11px;
+      font-size: 11px;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      cursor: pointer;
+    }
+
+    .fchip:hover {
+      border-color: var(--danger);
+    }
+
+    /* table */
+    .toolbar {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+    }
+
+    .tbl-s {
+      flex: 1;
+      min-width: 160px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      padding: 9px 14px;
+      font-size: 13px;
+      color: var(--text);
+      font-family: 'Cairo', sans-serif;
+    }
+
+    .tbl-s:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+
+    .fsel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      padding: 9px 12px;
+      font-size: 12px;
+      color: var(--text);
+      font-family: 'Cairo', sans-serif;
+    }
+
+    .tw {
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    thead tr {
+      background: var(--surface2);
+    }
+
+    th {
+      padding: 10px 12px;
+      text-align: right;
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .5px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    td {
+      padding: 10px 12px;
+      border-bottom: 1px solid rgba(46, 51, 72, .4);
+      vertical-align: middle;
+    }
+
+    tbody tr:hover {
+      background: var(--surface2);
+    }
+
+    .pnum {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      color: var(--accent);
+    }
+
+    .sbadge {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      border-radius: 6px;
+      padding: 3px 8px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .sbadge.ok {
+      background: rgba(16, 185, 129, .15);
+      color: var(--accent3);
+    }
+
+    .sbadge.low {
+      background: rgba(245, 158, 11, .15);
+      color: var(--accent);
+    }
+
+    .sbadge.out {
+      background: rgba(239, 68, 68, .15);
+      color: var(--danger);
+    }
+
+    .iBtn {
+      width: 28px;
+      height: 28px;
+      border-radius: 7px;
+      border: 1px solid var(--border);
+      background: var(--surface2);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      transition: all .2s;
+    }
+
+    .iBtn:hover {
+      border-color: var(--accent);
+    }
+
+    .thumb {
+      width: 42px;
+      height: 42px;
+      object-fit: cover;
+      border-radius: 7px;
+      border: 1px solid var(--border);
+    }
+
+    .no-thumb {
+      width: 42px;
+      height: 42px;
+      background: var(--surface3);
+      border-radius: 7px;
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      color: var(--muted);
+    }
+
+    /* belts */
+    .belt-sb {
+      background: linear-gradient(135deg, rgba(249, 115, 22, .1), rgba(245, 158, 11, .05));
+      border: 1px solid rgba(249, 115, 22, .3);
+      border-radius: 14px;
+      padding: 22px;
+      margin-bottom: 16px;
+    }
+
+    .belt-sb-title {
+      font-size: 16px;
+      font-weight: 900;
+      margin-bottom: 4px;
+    }
+
+    .bsd {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .belt-results {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 12px;
+    }
+
+    .bcard {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 13px;
+      padding: 15px;
+      cursor: pointer;
+      transition: all .2s;
+    }
+
+    .bcard:hover {
+      border-color: var(--orange);
+      transform: translateY(-2px);
+    }
+
+    .bcard-img-wrap {
+      width: 100%;
+      height: 70px;
+      background: var(--surface2);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 8px;
+      font-size: 26px;
+    }
+
+    .bcard-code {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 17px;
+      font-weight: 700;
+      color: var(--orange);
+      margin-bottom: 4px;
+    }
+
+    .bcard-name {
+      font-size: 12px;
+      font-weight: 700;
+      margin-bottom: 7px;
+    }
+
+    .bcard-dims {
+      display: flex;
+      gap: 4px;
+      flex-wrap: wrap;
+      margin-bottom: 6px;
+    }
+
+    .bdim {
+      background: rgba(249, 115, 22, .1);
+      border: 1px solid rgba(249, 115, 22, .25);
+      border-radius: 5px;
+      padding: 2px 7px;
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--orange);
+    }
+
+    .bcard-type {
+      display: inline-block;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      padding: 2px 7px;
+      font-size: 9px;
+      font-weight: 700;
+      color: var(--dim);
+      margin-bottom: 5px;
+    }
+
+    /* modal */
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, .75);
+      display: none;
+      align-items: flex-start;
+      justify-content: center;
+      z-index: 500;
+      backdrop-filter: blur(5px);
+      padding: 20px;
+      overflow-y: auto;
+    }
+
+    .overlay.show {
+      display: flex;
+    }
+
+    .modal {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      width: 600px;
+      max-width: 96vw;
+      padding: 26px;
+      animation: mIn .25s ease;
+      margin: auto;
+    }
+
+    @keyframes mIn {
+      from {
+        opacity: 0;
+        transform: scale(.95)
+      }
+
+      to {
+        opacity: 1;
+        transform: scale(1)
+      }
+    }
+
+    .modal-title {
+      font-size: 16px;
+      font-weight: 900;
+      margin-bottom: 16px;
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 16px;
+      justify-content: flex-end;
+    }
+
+    .mtabs {
+      display: flex;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+      margin-bottom: 14px;
+    }
+
+    .mtab {
+      flex: 1;
+      padding: 8px;
+      text-align: center;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      background: var(--surface2);
+      color: var(--muted);
+      font-family: 'Cairo', sans-serif;
+      border: none;
+      transition: all .2s;
+    }
+
+    .mtab.active {
+      background: var(--surface3);
+      color: var(--accent);
+    }
+
+    .mtp {
+      display: none;
+    }
+
+    .mtp.active {
+      display: block;
+    }
+
+    /* kpi */
+    .kpi-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .kpi {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 15px 18px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .kpi::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+    }
+
+    .kpi.am::after {
+      background: var(--accent);
+    }
+
+    .kpi.gr::after {
+      background: var(--accent3);
+    }
+
+    .kpi.bl::after {
+      background: var(--accent2);
+    }
+
+    .kpi.rd::after {
+      background: var(--danger);
+    }
+
+    .kpi.or::after {
+      background: var(--orange);
+    }
+
+    .kpi-l {
+      font-size: 10px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .5px;
+      margin-bottom: 4px;
+    }
+
+    .kpi-v {
+      font-size: 26px;
+      font-weight: 900;
+    }
+
+    .kpi-s {
+      font-size: 10px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    /* barcode */
+    .bc-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .bc-label {
+      background: #fff;
+      color: #000;
+      border-radius: 10px;
+      padding: 16px 20px;
+      text-align: center;
+      display: inline-block;
+      min-width: 230px;
+    }
+
+    .bc-shop {
+      font-size: 11px;
+      font-weight: 900;
+      margin-bottom: 1px;
+    }
+
+    .bc-name {
+      font-size: 13px;
+      font-weight: 700;
+      margin: 5px 0;
+    }
+
+    .bc-bars {
+      display: flex;
+      align-items: flex-end;
+      gap: 1.5px;
+      height: 44px;
+      justify-content: center;
+      margin-bottom: 5px;
+    }
+
+    .bar {
+      background: #000;
+      border-radius: 1px;
+    }
+
+    .bc-price {
+      font-size: 19px;
+      font-weight: 900;
+    }
+
+    .bc-num {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 8px;
+      color: #555;
+      margin-top: 1px;
+    }
+
+    .bc-dims-lbl {
+      font-size: 8px;
+      color: #444;
+      margin-top: 1px;
+    }
+
+    /* sync indicator */
+    .sync-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 14px;
+      background: var(--surface2);
+      border-radius: 8px;
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 12px;
+    }
+
+    .sync-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--accent3);
+    }
+
+    .sync-dot.syncing {
+      background: var(--accent);
+      animation: pulse 1s infinite;
+    }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      border-radius: 20px;
+      padding: 3px 10px;
+      font-size: 11px;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    .tag.found {
+      background: rgba(16, 185, 129, .15);
+      color: var(--accent3);
+      border: 1px solid rgba(16, 185, 129, .3);
+    }
+
+    .tag.warn {
+      background: rgba(245, 158, 11, .15);
+      color: var(--accent);
+      border: 1px solid rgba(245, 158, 11, .3);
+    }
+
+    .tag.out {
+      background: rgba(239, 68, 68, .15);
+      color: var(--danger);
+      border: 1px solid rgba(239, 68, 68, .3);
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 22px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: var(--accent3);
+      color: #000;
+      border-radius: 11px;
+      padding: 12px 22px;
+      font-size: 13px;
+      font-weight: 700;
+      transition: transform .3s;
+      z-index: 9999;
+      font-family: 'Cairo', sans-serif;
+      white-space: nowrap;
+    }
+
+    .toast.show {
+      transform: translateX(-50%) translateY(0);
+    }
+
+    @media(max-width:700px) {
+      .hpills {
+        display: none;
+      }
+
+      .result-layout {
+        grid-template-columns: 1fr;
+      }
+
+      .r-img {
+        border-left: none;
+        border-bottom: 1px solid var(--border);
+      }
+
+      .irow {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .kpi-row {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .bc-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .fgrid {
+        grid-template-columns: 1fr;
+      }
+
+      .dgrid {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .img-add-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .bsd {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .search-methods {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .main {
+        padding: 12px;
+      }
+    }
+  </style>
 </head>
+
 <body>
 
-<!-- HEADER -->
-<div class="header">
-  <div class="logo">
-    <div class="logo-icon">🔧</div>
-    <div>
-      <div class="logo-text">نظام قطع الغيار</div>
-      <div class="logo-sub">v5 — Google Sheets</div>
-    </div>
-  </div>
-  <div class="hpills">
-    <div class="pill"><div class="dot" style="background:var(--accent3)"></div><b id="h-total">—</b></div>
-    <div class="pill"><div class="dot" style="background:var(--orange)"></div><b id="h-belts">—</b> قشاطة</div>
-    <div class="conn-status disconnected" id="connStatus" onclick="openSetup()">
-      <div class="conn-dot" id="connDot" style="background:var(--danger)"></div>
-      <span id="connText">غير متصل</span>
-    </div>
-  </div>
-</div>
-
-<!-- NAV -->
-<div class="nav">
-  <button class="tab active" onclick="showTab('search',this)">🔍 بحث</button>
-  <button class="tab" onclick="showTab('add',this)">➕ إضافة قطعة</button>
-  <button class="tab" onclick="showTab('belts',this)">🔶 قشاطات</button>
-  <button class="tab" onclick="showTab('inventory',this)">📦 المخزون</button>
-  <button class="tab" onclick="showTab('barcode',this)">🏷️ الباركود</button>
-  <button class="tab" onclick="showTab('dash',this)">📊 إحصائيات</button>
-</div>
-
-<div class="main">
-
-<!-- SETUP BANNER -->
-<div class="setup-banner show" id="setupBanner">
-  <div class="setup-banner-title">⚙️ إعداد الاتصال بـ Google Sheets</div>
-  <div class="setup-banner-sub">
-    الصق رابط Google Apps Script هنا عشان النظام يتصل بقاعدة بياناتك.<br>
-    إذا ما عندك الرابط بعد، راجع ملف <b>google-sheets-guide.html</b> المرفق.
-  </div>
-  <div class="api-input-row">
-    <input class="api-input" id="apiUrlInput" placeholder="https://script.google.com/macros/s/.../exec" type="url">
-    <button class="btn btn-primary" onclick="saveApiUrl()">🔗 اتصال</button>
-    <button class="btn btn-secondary btn-sm" onclick="testWithDemoData()">🧪 تجربة بدون اتصال</button>
-  </div>
-</div>
-
-<!-- LOADING -->
-<div class="loading-screen" id="loadingScreen">
-  <div class="big-spinner"></div>
-  <div class="loading-title" id="loadTitle">جاري الاتصال بـ Google Sheets...</div>
-  <div class="loading-sub" id="loadSub">يتم جلب بياناتك</div>
-</div>
-
-<!-- ═══ SEARCH ═══ -->
-<div id="tab-search" class="section active">
-  <div class="search-hero">
-    <div class="search-title">ابحث عن <span>أي قطعة</span></div>
-    <div style="color:var(--muted);font-size:13px;margin-bottom:16px">بالرقم أو الاسم أو بالصورة مباشرة</div>
-    <div class="search-methods">
-      <div class="sm active" id="sm-t" onclick="swSrch('t')"><div class="sm-icon">🔢</div><div class="sm-lbl">رقم أو اسم</div><div class="sm-sub">أدخل رقم القطعة أو OEM</div></div>
-      <div class="sm" id="sm-i" onclick="swSrch('i')"><div class="sm-icon">📷</div><div class="sm-lbl">بحث بالصورة</div><div class="sm-sub">الذكاء يتعرف على القطعة</div></div>
-    </div>
-    <div class="sp active" id="spt">
-      <div class="srch-row">
-        <input class="srch-in" id="srchIn" placeholder="رقم القطعة أو الاسم أو رمز القشاطة..." onkeypress="if(event.key==='Enter')doSearch()">
-        <button class="btn btn-primary" onclick="doSearch()">🔍 بحث</button>
-      </div>
-      <div class="demo-row">
-        <button class="dchip" onclick="qs('فلتر')">فلتر</button>
-        <button class="dchip" onclick="qs('A-42')">A-42</button>
-        <button class="dchip" onclick="qs('B-54')">B-54</button>
-        <button class="dchip" onclick="qs('شمعات')">شمعات</button>
+  <!-- HEADER -->
+  <div class="header">
+    <div class="logo">
+      <div class="logo-icon">🔧</div>
+      <div>
+        <div class="logo-text">نظام قطع الغيار</div>
+        <div class="logo-sub">v5 — Google Sheets</div>
       </div>
     </div>
-    <div class="sp" id="spi">
-      <div class="img-search-area" id="imgSrchArea">
-        <input type="file" accept="image/*" id="imgSrchFile" style="position:absolute;inset:0;opacity:0;cursor:pointer" onchange="handleSrchImg(this)">
-        <div class="isa-placeholder" id="isaPh">
-          <div class="isa-icon">🔍📷</div>
-          <div class="isa-title">صوّر القطعة أو ارفع صورتها</div>
-          <div class="isa-sub">الذكاء الاصطناعي يتعرف عليها ويبحث في مخزونك</div>
-          <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
-            <button class="btn btn-purple btn-sm" onclick="event.stopPropagation();document.getElementById('camSrch').click()">📷 كاميرا</button>
-            <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();document.getElementById('imgSrchFile').click()">🖼️ رفع صورة</button>
+    <div class="hpills">
+      <div class="pill">
+        <div class="dot" style="background:var(--accent3)"></div><b id="h-total">—</b>
+      </div>
+      <div class="pill">
+        <div class="dot" style="background:var(--orange)"></div><b id="h-belts">—</b> قشاطة
+      </div>
+      <div class="conn-status disconnected" id="connStatus" onclick="openSetup()">
+        <div class="conn-dot" id="connDot" style="background:var(--danger)"></div>
+        <span id="connText">غير متصل</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- NAV -->
+  <div class="nav">
+    <button class="tab active" onclick="showTab('search',this)">🔍 بحث</button>
+    <button class="tab" onclick="showTab('add',this)">➕ إضافة قطعة</button>
+    <button class="tab" onclick="showTab('belts',this)">🔶 قشاطات</button>
+    <button class="tab" onclick="showTab('inventory',this)">📦 المخزون</button>
+    <button class="tab" onclick="showTab('barcode',this)">🏷️ الباركود</button>
+    <button class="tab" onclick="showTab('dash',this)">📊 إحصائيات</button>
+  </div>
+
+  <div class="main">
+
+    <!-- SETUP BANNER -->
+    <div class="setup-banner show" id="setupBanner">
+      <div class="setup-banner-title">⚙️ إعداد الاتصال بـ Google Sheets</div>
+      <div class="setup-banner-sub">
+        الصق رابط Google Apps Script هنا عشان النظام يتصل بقاعدة بياناتك.<br>
+        إذا ما عندك الرابط بعد، راجع ملف <b>google-sheets-guide.html</b> المرفق.
+      </div>
+      <div class="api-input-row">
+        <input class="api-input" id="apiUrlInput" placeholder="https://script.google.com/macros/s/.../exec" type="url">
+        <button class="btn btn-primary" onclick="saveApiUrl()">🔗 اتصال</button>
+        <button class="btn btn-secondary btn-sm" onclick="testWithDemoData()">🧪 تجربة بدون اتصال</button>
+      </div>
+    </div>
+
+    <!-- LOADING -->
+    <div class="loading-screen" id="loadingScreen">
+      <div class="big-spinner"></div>
+      <div class="loading-title" id="loadTitle">جاري الاتصال بـ Google Sheets...</div>
+      <div class="loading-sub" id="loadSub">يتم جلب بياناتك</div>
+    </div>
+
+    <!-- ═══ SEARCH ═══ -->
+    <div id="tab-search" class="section active">
+      <div class="search-hero">
+        <div class="search-title">ابحث عن <span>أي قطعة</span></div>
+        <div style="color:var(--muted);font-size:13px;margin-bottom:16px">بالرقم أو الاسم أو بالصورة مباشرة</div>
+        <div class="search-methods">
+          <div class="sm active" id="sm-t" onclick="swSrch('t')">
+            <div class="sm-icon">🔢</div>
+            <div class="sm-lbl">رقم أو اسم</div>
+            <div class="sm-sub">أدخل رقم القطعة أو OEM</div>
+          </div>
+          <div class="sm" id="sm-i" onclick="swSrch('i')">
+            <div class="sm-icon">📷</div>
+            <div class="sm-lbl">بحث بالصورة</div>
+            <div class="sm-sub">الذكاء يتعرف على القطعة</div>
           </div>
         </div>
-        <img id="srchImgPreview" style="display:none;width:100%;max-height:200px;object-fit:contain;border-radius:12px">
-        <div class="analyzing-ovl" id="anlOvl"><div class="ai-spin"></div><div class="analyzing-txt">🤖 يحلل الصورة...</div></div>
-      </div>
-      <input type="file" accept="image/*" capture="environment" id="camSrch" style="display:none" onchange="handleSrchImg(this)">
-      <div class="ai-analysis" id="aiAnal">
-        <div class="ai-badge">🤖 تحليل الذكاء الاصطناعي</div>
-        <div class="ai-pname" id="ai-pn">—</div>
-        <div style="font-size:11px;color:var(--muted);margin-bottom:10px" id="ai-conf"></div>
-        <div class="ai-info">
-          <div class="ai-box"><div class="ai-box-l">الفئة</div><div class="ai-box-v" id="ai-cat">—</div></div>
-          <div class="ai-box"><div class="ai-box-l">الماركة</div><div class="ai-box-v" id="ai-brand">—</div></div>
-          <div class="ai-box"><div class="ai-box-l">الحالة</div><div class="ai-box-v" id="ai-cond">—</div></div>
+        <div class="sp active" id="spt">
+          <div class="srch-row">
+            <input class="srch-in" id="srchIn" placeholder="رقم القطعة أو الاسم أو رمز القشاطة..."
+              onkeypress="if(event.key==='Enter')doSearch()">
+            <button class="btn btn-primary" onclick="doSearch()">🔍 بحث</button>
+          </div>
+          <div class="demo-row">
+            <button class="dchip" onclick="qs('فلتر')">فلتر</button>
+            <button class="dchip" onclick="qs('A-42')">A-42</button>
+            <button class="dchip" onclick="qs('B-54')">B-54</button>
+            <button class="dchip" onclick="qs('شمعات')">شمعات</button>
+          </div>
         </div>
-        <div class="ai-matches-title">🔎 أقرب قطع في مخزونك:</div>
-        <div id="ai-matches"></div>
-        <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
-          <button class="btn btn-secondary btn-sm" onclick="resetImgSrch()">↩ بحث آخر</button>
-          <button class="btn btn-purple btn-sm" onclick="addFromAI()">➕ إضافة جديدة</button>
-        </div>
-      </div>
-    </div>
-  </div>
-  <div class="result-card" id="resultCard">
-    <div style="padding:12px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
-      <div><span class="tag found" id="r-badge">✓</span><div class="r-name" id="r-name"></div><div class="r-num" id="r-num"></div></div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button class="btn btn-secondary btn-sm" onclick="printFromSrch()">🏷️ ملصق</button>
-        <button class="btn btn-primary btn-sm" onclick="editFromSrch()">✏️ تعديل</button>
-      </div>
-    </div>
-    <div class="result-layout">
-      <div class="r-img" id="r-imgcol"></div>
-      <div class="r-info">
-        <div class="irow">
-          <div class="ibox"><div class="ibox-l">💰 السعر</div><div class="ibox-v price" id="r-price"></div></div>
-          <div class="ibox"><div class="ibox-l">📦 المخزون</div><div class="ibox-v" id="r-qty"></div></div>
-          <div class="ibox"><div class="ibox-l">🏷️ الفئة</div><div class="ibox-v" style="font-size:12px" id="r-cat"></div></div>
-        </div>
-        <div class="dims-row" id="r-dims"></div>
-        <div class="compat-title">🚗 متوافق مع <span class="compat-cnt" id="r-cnt">0</span></div>
-        <div class="compat-grid" id="r-compat"></div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- ═══ ADD ═══ -->
-<div id="tab-add" class="section">
-  <div class="panel">
-    <div class="panel-title">➕ إضافة قطعة جديدة</div>
-    <div class="flow-steps">
-      <div class="fs active" id="fi1"><div class="fs-n">1</div><div class="fs-l">الرقم</div></div>
-      <div class="fs" id="fi2"><div class="fs-n">2</div><div class="fs-l">الصورة</div></div>
-      <div class="fs" id="fi3"><div class="fs-n">3</div><div class="fs-l">القياسات</div></div>
-      <div class="fs" id="fi4"><div class="fs-n">4</div><div class="fs-l">السعر</div></div>
-      <div class="fs" id="fi5"><div class="fs-n">5</div><div class="fs-l">التوافق</div></div>
-    </div>
-
-    <!-- S1 -->
-    <div class="astep active" id="as1">
-      <div style="border:2px dashed var(--border);border-radius:12px;padding:28px;text-align:center;background:var(--surface2)">
-        <div style="font-size:32px;margin-bottom:8px">📷</div>
-        <div style="font-size:14px;font-weight:800;margin-bottom:5px">امسح الباركود أو أدخل رقم القطعة</div>
-        <div style="color:var(--muted);font-size:12px;margin-bottom:14px">رقم OEM على العلبة، أو رمز القشاطة (A-42)</div>
-        <input type="text" id="addNum" placeholder="مثال: 0451103079 أو A-42" style="max-width:320px;direction:ltr;text-align:center;letter-spacing:2px" onkeypress="if(event.key==='Enter')fetchFill()">
-        <div style="margin-top:12px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
-          <button class="btn btn-primary" onclick="fetchFill()" id="fetchBtn">🤖 جلب تلقائي</button>
-          <button class="btn btn-secondary" onclick="skipFetch()">إدخال يدوي ←</button>
+        <div class="sp" id="spi">
+          <div class="img-search-area" id="imgSrchArea">
+            <input type="file" accept="image/*" id="imgSrchFile"
+              style="position:absolute;inset:0;opacity:0;cursor:pointer" onchange="handleSrchImg(this)">
+            <div class="isa-placeholder" id="isaPh">
+              <div class="isa-icon">🔍📷</div>
+              <div class="isa-title">صوّر القطعة أو ارفع صورتها</div>
+              <div class="isa-sub">الذكاء الاصطناعي يتعرف عليها ويبحث في مخزونك</div>
+              <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
+                <button class="btn btn-purple btn-sm"
+                  onclick="event.stopPropagation();document.getElementById('camSrch').click()">📷 كاميرا</button>
+                <button class="btn btn-secondary btn-sm"
+                  onclick="event.stopPropagation();document.getElementById('imgSrchFile').click()">🖼️ رفع صورة</button>
+              </div>
+            </div>
+            <img id="srchImgPreview"
+              style="display:none;width:100%;max-height:200px;object-fit:contain;border-radius:12px">
+            <div class="analyzing-ovl" id="anlOvl">
+              <div class="ai-spin"></div>
+              <div class="analyzing-txt">🤖 يحلل الصورة...</div>
+            </div>
+          </div>
+          <input type="file" accept="image/*" capture="environment" id="camSrch" style="display:none"
+            onchange="handleSrchImg(this)">
+          <div class="ai-analysis" id="aiAnal">
+            <div class="ai-badge">🤖 تحليل الذكاء الاصطناعي</div>
+            <div class="ai-pname" id="ai-pn">—</div>
+            <div style="font-size:11px;color:var(--muted);margin-bottom:10px" id="ai-conf"></div>
+            <div class="ai-info">
+              <div class="ai-box">
+                <div class="ai-box-l">الفئة</div>
+                <div class="ai-box-v" id="ai-cat">—</div>
+              </div>
+              <div class="ai-box">
+                <div class="ai-box-l">الماركة</div>
+                <div class="ai-box-v" id="ai-brand">—</div>
+              </div>
+              <div class="ai-box">
+                <div class="ai-box-l">الحالة</div>
+                <div class="ai-box-v" id="ai-cond">—</div>
+              </div>
+            </div>
+            <div class="ai-matches-title">🔎 أقرب قطع في مخزونك:</div>
+            <div id="ai-matches"></div>
+            <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+              <button class="btn btn-secondary btn-sm" onclick="resetImgSrch()">↩ بحث آخر</button>
+              <button class="btn btn-purple btn-sm" onclick="addFromAI()">➕ إضافة جديدة</button>
+            </div>
+          </div>
         </div>
       </div>
-    </div>
-
-    <!-- S2 -->
-    <div class="astep" id="as2">
-      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px 16px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
-        <div><div style="font-size:14px;font-weight:800" id="s2n">—</div><div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--accent)" id="s2num">—</div></div>
-        <button class="btn btn-secondary btn-sm" onclick="goS(1)">↩ تغيير</button>
-      </div>
-      <div style="font-size:13px;font-weight:800;margin-bottom:12px">📷 صورة القطعة <span style="color:var(--muted);font-weight:400;font-size:12px">(تساعد الذكاء يتعرف عليها لاحقاً)</span></div>
-      <div class="img-add-grid">
-        <div class="iam" onclick="document.getElementById('camAdd').click()"><div class="iam-icon">📷</div><div class="iam-lbl">كاميرا</div><div class="iam-sub">صوّر مباشرة</div></div>
-        <div class="iam" style="position:relative"><input type="file" accept="image/*" onchange="handleAddImg(this)"><div class="iam-icon">🖼️</div><div class="iam-lbl">رفع صورة</div><div class="iam-sub">من الجهاز</div></div>
-        <div class="iam" onclick="skipAddImg()"><div class="iam-icon">⏭️</div><div class="iam-lbl">تخطي</div><div class="iam-sub">بدون صورة</div></div>
-      </div>
-      <input type="file" accept="image/*" capture="environment" id="camAdd" style="display:none" onchange="handleAddImg(this)">
-      <img id="addImgPrev" style="display:none;width:100%;max-height:160px;object-fit:contain;border-radius:8px;margin-top:8px">
-      <div style="background:rgba(139,92,246,.08);border:1px solid rgba(139,92,246,.2);border-radius:9px;padding:10px 14px;margin-top:10px;font-size:12px;color:var(--dim);display:none" id="addRecog">
-        🤖 <span id="addRecogTxt"></span>
-      </div>
-      <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap">
-        <button class="btn btn-secondary btn-sm" onclick="goS(1)">← رجوع</button>
-        <button class="btn btn-primary" onclick="goS(3)" id="nextS3">التالي: القياسات →</button>
-      </div>
-    </div>
-
-    <!-- S3 -->
-    <div class="astep" id="as3">
-      <div id="belt-sec" style="display:none;margin-bottom:14px">
-        <label style="display:block;margin-bottom:8px">🔶 نوع القشاطة</label>
-        <div class="btype-row">
-          <button class="btb" onclick="selBT('A',this)">A<div style="font-size:9px;color:var(--muted)">V مقطع</div></button>
-          <button class="btb" onclick="selBT('B',this)">B<div style="font-size:9px;color:var(--muted)">V عريض</div></button>
-          <button class="btb" onclick="selBT('AV',this)">AV<div style="font-size:9px;color:var(--muted)">مروّع</div></button>
-          <button class="btb" onclick="selBT('SPZ',this)">SPZ<div style="font-size:9px;color:var(--muted)">متعدد</div></button>
+      <div class="result-card" id="resultCard">
+        <div
+          style="padding:12px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+          <div><span class="tag found" id="r-badge">✓</span>
+            <div class="r-name" id="r-name"></div>
+            <div class="r-num" id="r-num"></div>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn btn-secondary btn-sm" onclick="printFromSrch()">🏷️ ملصق</button>
+            <button class="btn btn-primary btn-sm" onclick="editFromSrch()">✏️ تعديل</button>
+          </div>
         </div>
-        <div id="bcp-wrap" style="text-align:center;display:none"><div style="font-size:10px;color:var(--muted);margin-bottom:3px">الرمز القياسي</div><div class="belt-code-badge" id="bcp">—</div></div>
-      </div>
-      <div class="dgrid">
-        <div class="diw"><div class="dil">الطول الخارجي</div><div class="dir"><input type="number" id="d-len" placeholder="مثال: 1067" step="0.5" oninput="updBeltCode()"><div class="dir-u">mm</div></div></div>
-        <div class="diw"><div class="dil">العرض</div><div class="dir"><input type="number" id="d-wid" placeholder="13" step="0.5"><div class="dir-u">mm</div></div></div>
-        <div class="diw"><div class="dil">السماكة</div><div class="dir"><input type="number" id="d-hgt" placeholder="8" step="0.5"><div class="dir-u">mm</div></div></div>
-        <div class="diw"><div class="dil">ق. داخلي</div><div class="dir"><input type="number" id="d-inn" placeholder="اختياري" step="0.5"><div class="dir-u">mm</div></div></div>
-        <div class="diw"><div class="dil">ق. خارجي</div><div class="dir"><input type="number" id="d-out" placeholder="اختياري" step="0.5"><div class="dir-u">mm</div></div></div>
-        <div class="diw"><div class="dil">الوزن</div><div class="dir"><input type="number" id="d-wgt" placeholder="اختياري" step="0.01"><div class="dir-u">kg</div></div></div>
-      </div>
-      <div style="margin-top:10px"><div class="dil" style="margin-bottom:5px">رمز بديل (A-42 أو 6PK1060)</div><input type="text" id="d-alt" style="direction:ltr;text-align:right"></div>
-      <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap">
-        <button class="btn btn-secondary btn-sm" onclick="goS(2)">← رجوع</button>
-        <button class="btn btn-secondary btn-sm" onclick="goS(4)">تخطي ←</button>
-        <button class="btn btn-primary" onclick="goS(4)">التالي →</button>
-      </div>
-    </div>
-
-    <!-- S4 -->
-    <div class="astep" id="as4">
-      <div class="fgrid">
-        <div class="fg full"><label>اسم القطعة</label><input type="text" id="f-name" placeholder="مثال: فلتر زيت بوش"></div>
-        <div class="fg full"><label>رقم القطعة</label><input type="text" id="f-num" style="direction:ltr;text-align:right"></div>
-        <div class="fg"><label>الفئة</label><select id="f-cat" onchange="if(this.value==='قشاطات')document.getElementById('belt-sec').style.display='block'"><option>قطع محرك</option><option>قطع كهرباء</option><option>قطع هيكل</option><option>تعليق وفرامل</option><option>قشاطات</option></select></div>
-        <div class="fg"><label>الماركة</label><input type="text" id="f-brand" placeholder="BOSCH، NGK، Gates..."></div>
-        <div class="fg"><label>💰 السعر ($)</label><input type="number" id="f-price" placeholder="0.00" step="0.5" min="0"></div>
-        <div class="fg"><label>📦 الكمية</label><input type="number" id="f-qty" placeholder="0" min="0"></div>
-        <div class="fg full"><label>ملاحظات</label><input type="text" id="f-notes" placeholder="أي ملاحظة..."></div>
-      </div>
-      <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap">
-        <button class="btn btn-secondary btn-sm" onclick="goS(3)">← رجوع</button>
-        <button class="btn btn-primary" onclick="goS(5)">التالي: التوافق →</button>
+        <div class="result-layout">
+          <div class="r-img" id="r-imgcol"></div>
+          <div class="r-info">
+            <div class="irow">
+              <div class="ibox">
+                <div class="ibox-l">💰 السعر</div>
+                <div class="ibox-v price" id="r-price"></div>
+              </div>
+              <div class="ibox">
+                <div class="ibox-l">📦 المخزون</div>
+                <div class="ibox-v" id="r-qty"></div>
+              </div>
+              <div class="ibox">
+                <div class="ibox-l">🏷️ الفئة</div>
+                <div class="ibox-v" style="font-size:12px" id="r-cat"></div>
+              </div>
+            </div>
+            <div class="dims-row" id="r-dims"></div>
+            <div class="compat-title">🚗 متوافق مع <span class="compat-cnt" id="r-cnt">0</span></div>
+            <div class="compat-grid" id="r-compat"></div>
+          </div>
+        </div>
       </div>
     </div>
 
-    <!-- S5 -->
-    <div class="astep" id="as5">
-      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px">
-        <div style="font-size:13px;font-weight:800">🚗 السيارات المتوافقة</div>
-        <button class="btn btn-purple btn-sm" onclick="aiFit()">🤖 جلب تلقائي</button>
-      </div>
-      <div class="fit-chips" id="fitChips"></div>
-      <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">
-        <input type="text" id="fit-in" placeholder="تويوتا كامري 2015-2022" style="flex:1;min-width:160px;font-size:13px">
-        <button class="btn btn-secondary btn-sm" onclick="addFit()">+ إضافة</button>
-      </div>
-      <textarea id="f-fit" placeholder="أو كتابة كل سيارة في سطر..." style="font-size:13px"></textarea>
-      <div style="display:flex;gap:10px;margin-top:14px;justify-content:space-between;flex-wrap:wrap">
-        <button class="btn btn-secondary btn-sm" onclick="goS(4)">← رجوع</button>
-        <button class="btn btn-primary" onclick="savePart()" id="saveBtn">💾 حفظ في Google Sheets</button>
+    <!-- ═══ ADD ═══ -->
+    <div id="tab-add" class="section">
+      <div class="panel">
+        <div class="panel-title">➕ إضافة قطعة جديدة</div>
+        <div class="flow-steps">
+          <div class="fs active" id="fi1">
+            <div class="fs-n">1</div>
+            <div class="fs-l">الرقم</div>
+          </div>
+          <div class="fs" id="fi2">
+            <div class="fs-n">2</div>
+            <div class="fs-l">الصورة</div>
+          </div>
+          <div class="fs" id="fi3">
+            <div class="fs-n">3</div>
+            <div class="fs-l">القياسات</div>
+          </div>
+          <div class="fs" id="fi4">
+            <div class="fs-n">4</div>
+            <div class="fs-l">السعر</div>
+          </div>
+          <div class="fs" id="fi5">
+            <div class="fs-n">5</div>
+            <div class="fs-l">التوافق</div>
+          </div>
+        </div>
+
+        <!-- S1 -->
+        <div class="astep active" id="as1">
+          <div
+            style="border:2px dashed var(--border);border-radius:12px;padding:28px;text-align:center;background:var(--surface2)">
+            <div style="font-size:32px;margin-bottom:8px">📷</div>
+            <div style="font-size:14px;font-weight:800;margin-bottom:5px">امسح الباركود أو أدخل رقم القطعة</div>
+            <div style="color:var(--muted);font-size:12px;margin-bottom:14px">رقم OEM على العلبة، أو رمز القشاطة (A-42)
+            </div>
+            <input type="text" id="addNum" placeholder="مثال: 0451103079 أو A-42"
+              style="max-width:320px;direction:ltr;text-align:center;letter-spacing:2px"
+              onkeypress="if(event.key==='Enter')fetchFill()">
+            <div style="margin-top:12px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
+              <button class="btn btn-primary" onclick="fetchFill()" id="fetchBtn">🤖 جلب تلقائي</button>
+              <button class="btn btn-secondary" onclick="skipFetch()">إدخال يدوي ←</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- S2 -->
+        <div class="astep" id="as2">
+          <div
+            style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px 16px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+            <div>
+              <div style="font-size:14px;font-weight:800" id="s2n">—</div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--accent)" id="s2num">—</div>
+            </div>
+            <button class="btn btn-secondary btn-sm" onclick="goS(1)">↩ تغيير</button>
+          </div>
+          <div style="font-size:13px;font-weight:800;margin-bottom:12px">📷 صورة القطعة <span
+              style="color:var(--muted);font-weight:400;font-size:12px">(تساعد الذكاء يتعرف عليها لاحقاً)</span></div>
+          <div class="img-add-grid">
+            <div class="iam" onclick="document.getElementById('camAdd').click()">
+              <div class="iam-icon">📷</div>
+              <div class="iam-lbl">كاميرا</div>
+              <div class="iam-sub">صوّر مباشرة</div>
+            </div>
+            <div class="iam" style="position:relative"><input type="file" accept="image/*"
+                onchange="handleAddImg(this)">
+              <div class="iam-icon">🖼️</div>
+              <div class="iam-lbl">رفع صورة</div>
+              <div class="iam-sub">من الجهاز</div>
+            </div>
+            <div class="iam" onclick="skipAddImg()">
+              <div class="iam-icon">⏭️</div>
+              <div class="iam-lbl">تخطي</div>
+              <div class="iam-sub">بدون صورة</div>
+            </div>
+          </div>
+          <input type="file" accept="image/*" capture="environment" id="camAdd" style="display:none"
+            onchange="handleAddImg(this)">
+          <img id="addImgPrev"
+            style="display:none;width:100%;max-height:160px;object-fit:contain;border-radius:8px;margin-top:8px">
+          <div
+            style="background:rgba(139,92,246,.08);border:1px solid rgba(139,92,246,.2);border-radius:9px;padding:10px 14px;margin-top:10px;font-size:12px;color:var(--dim);display:none"
+            id="addRecog">
+            🤖 <span id="addRecogTxt"></span>
+          </div>
+          <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap">
+            <button class="btn btn-secondary btn-sm" onclick="goS(1)">← رجوع</button>
+            <button class="btn btn-primary" onclick="goS(3)" id="nextS3">التالي: القياسات →</button>
+          </div>
+        </div>
+
+        <!-- S3 -->
+        <div class="astep" id="as3">
+          <div id="belt-sec" style="display:none;margin-bottom:14px">
+            <label style="display:block;margin-bottom:8px">🔶 نوع القشاطة</label>
+            <div class="btype-row">
+              <button class="btb" onclick="selBT('A',this)">A<div style="font-size:9px;color:var(--muted)">V مقطع</div>
+              </button>
+              <button class="btb" onclick="selBT('B',this)">B<div style="font-size:9px;color:var(--muted)">V عريض</div>
+              </button>
+              <button class="btb" onclick="selBT('AV',this)">AV<div style="font-size:9px;color:var(--muted)">مروّع</div>
+              </button>
+              <button class="btb" onclick="selBT('SPZ',this)">SPZ<div style="font-size:9px;color:var(--muted)">متعدد
+                </div></button>
+            </div>
+            <div id="bcp-wrap" style="text-align:center;display:none">
+              <div style="font-size:10px;color:var(--muted);margin-bottom:3px">الرمز القياسي</div>
+              <div class="belt-code-badge" id="bcp">—</div>
+            </div>
+          </div>
+          <div class="dgrid">
+            <div class="diw">
+              <div class="dil">الطول الخارجي</div>
+              <div class="dir"><input type="number" id="d-len" placeholder="مثال: 1067" step="0.5"
+                  oninput="updBeltCode()">
+                <div class="dir-u">mm</div>
+              </div>
+            </div>
+            <div class="diw">
+              <div class="dil">العرض</div>
+              <div class="dir"><input type="number" id="d-wid" placeholder="13" step="0.5">
+                <div class="dir-u">mm</div>
+              </div>
+            </div>
+            <div class="diw">
+              <div class="dil">السماكة</div>
+              <div class="dir"><input type="number" id="d-hgt" placeholder="8" step="0.5">
+                <div class="dir-u">mm</div>
+              </div>
+            </div>
+            <div class="diw">
+              <div class="dil">ق. داخلي</div>
+              <div class="dir"><input type="number" id="d-inn" placeholder="اختياري" step="0.5">
+                <div class="dir-u">mm</div>
+              </div>
+            </div>
+            <div class="diw">
+              <div class="dil">ق. خارجي</div>
+              <div class="dir"><input type="number" id="d-out" placeholder="اختياري" step="0.5">
+                <div class="dir-u">mm</div>
+              </div>
+            </div>
+            <div class="diw">
+              <div class="dil">الوزن</div>
+              <div class="dir"><input type="number" id="d-wgt" placeholder="اختياري" step="0.01">
+                <div class="dir-u">kg</div>
+              </div>
+            </div>
+          </div>
+          <div style="margin-top:10px">
+            <div class="dil" style="margin-bottom:5px">رمز بديل (A-42 أو 6PK1060)</div><input type="text" id="d-alt"
+              style="direction:ltr;text-align:right">
+          </div>
+          <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap">
+            <button class="btn btn-secondary btn-sm" onclick="goS(2)">← رجوع</button>
+            <button class="btn btn-secondary btn-sm" onclick="goS(4)">تخطي ←</button>
+            <button class="btn btn-primary" onclick="goS(4)">التالي →</button>
+          </div>
+        </div>
+
+        <!-- S4 -->
+        <div class="astep" id="as4">
+          <div class="fgrid">
+            <div class="fg full"><label>اسم القطعة</label><input type="text" id="f-name"
+                placeholder="مثال: فلتر زيت بوش"></div>
+            <div class="fg full"><label>رقم القطعة</label><input type="text" id="f-num"
+                style="direction:ltr;text-align:right"></div>
+            <div class="fg"><label>الفئة</label><select id="f-cat"
+                onchange="if(this.value==='قشاطات')document.getElementById('belt-sec').style.display='block'">
+                <option>قطع محرك</option>
+                <option>قطع كهرباء</option>
+                <option>قطع هيكل</option>
+                <option>تعليق وفرامل</option>
+                <option>قشاطات</option>
+              </select></div>
+            <div class="fg"><label>الماركة</label><input type="text" id="f-brand" placeholder="BOSCH، NGK، Gates...">
+            </div>
+            <div class="fg"><label>💰 السعر ($)</label><input type="number" id="f-price" placeholder="0.00" step="0.5"
+                min="0"></div>
+            <div class="fg"><label>📦 الكمية</label><input type="number" id="f-qty" placeholder="0" min="0"></div>
+            <div class="fg full"><label>ملاحظات</label><input type="text" id="f-notes" placeholder="أي ملاحظة..."></div>
+          </div>
+          <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap">
+            <button class="btn btn-secondary btn-sm" onclick="goS(3)">← رجوع</button>
+            <button class="btn btn-primary" onclick="goS(5)">التالي: التوافق →</button>
+          </div>
+        </div>
+
+        <!-- S5 -->
+        <div class="astep" id="as5">
+          <div
+            style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px">
+            <div style="font-size:13px;font-weight:800">🚗 السيارات المتوافقة</div>
+            <button class="btn btn-purple btn-sm" onclick="aiFit()">🤖 جلب تلقائي</button>
+          </div>
+          <div class="fit-chips" id="fitChips"></div>
+          <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">
+            <input type="text" id="fit-in" placeholder="تويوتا كامري 2015-2022"
+              style="flex:1;min-width:160px;font-size:13px">
+            <button class="btn btn-secondary btn-sm" onclick="addFit()">+ إضافة</button>
+          </div>
+          <textarea id="f-fit" placeholder="أو كتابة كل سيارة في سطر..." style="font-size:13px"></textarea>
+          <div style="display:flex;gap:10px;margin-top:14px;justify-content:space-between;flex-wrap:wrap">
+            <button class="btn btn-secondary btn-sm" onclick="goS(4)">← رجوع</button>
+            <button class="btn btn-primary" onclick="savePart()" id="saveBtn">💾 حفظ في Google Sheets</button>
+          </div>
+        </div>
       </div>
     </div>
-  </div>
-</div>
 
-<!-- ═══ BELTS ═══ -->
-<div id="tab-belts" class="section">
-  <div class="belt-sb">
-    <div class="belt-sb-title">🔶 قشاطات المروحة</div>
-    <div style="font-size:12px;color:var(--muted)">ابحث بالرمز أو بالقياس (±25mm تقريب)</div>
-    <div class="bsd">
-      <div class="fg"><label>الرمز</label><input type="text" id="bs-code" placeholder="A-42 أو B-54" style="direction:ltr;text-align:center" onkeypress="if(event.key==='Enter')srchBelts()"></div>
-      <div class="fg"><label>الطول (mm)</label><input type="number" id="bs-len" placeholder="1067" onkeypress="if(event.key==='Enter')srchBelts()"></div>
-      <div class="fg"><label>العرض (mm)</label><input type="number" id="bs-wid" placeholder="13" onkeypress="if(event.key==='Enter')srchBelts()"></div>
-      <div style="display:flex;align-items:flex-end"><button class="btn btn-orange" style="width:100%" onclick="srchBelts()">🔍 بحث</button></div>
+    <!-- ═══ BELTS ═══ -->
+    <div id="tab-belts" class="section">
+      <div class="belt-sb">
+        <div class="belt-sb-title">🔶 قشاطات المروحة</div>
+        <div style="font-size:12px;color:var(--muted)">ابحث بالرمز أو بالقياس (±25mm تقريب)</div>
+        <div class="bsd">
+          <div class="fg"><label>الرمز</label><input type="text" id="bs-code" placeholder="A-42 أو B-54"
+              style="direction:ltr;text-align:center" onkeypress="if(event.key==='Enter')srchBelts()"></div>
+          <div class="fg"><label>الطول (mm)</label><input type="number" id="bs-len" placeholder="1067"
+              onkeypress="if(event.key==='Enter')srchBelts()"></div>
+          <div class="fg"><label>العرض (mm)</label><input type="number" id="bs-wid" placeholder="13"
+              onkeypress="if(event.key==='Enter')srchBelts()"></div>
+          <div style="display:flex;align-items:flex-end"><button class="btn btn-orange" style="width:100%"
+              onclick="srchBelts()">🔍 بحث</button></div>
+        </div>
+      </div>
+      <div
+        style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+        <div style="font-size:13px;font-weight:700">كل القشاطات <span id="belt-cnt" style="color:var(--orange)"></span>
+        </div>
+        <button class="btn btn-orange btn-sm" onclick="addBelt()">+ إضافة قشاطة</button>
+      </div>
+      <div class="belt-results" id="beltRes"></div>
     </div>
-  </div>
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
-    <div style="font-size:13px;font-weight:700">كل القشاطات <span id="belt-cnt" style="color:var(--orange)"></span></div>
-    <button class="btn btn-orange btn-sm" onclick="addBelt()">+ إضافة قشاطة</button>
-  </div>
-  <div class="belt-results" id="beltRes"></div>
-</div>
 
-<!-- ═══ INVENTORY ═══ -->
-<div id="tab-inventory" class="section">
-  <div class="sync-row"><div class="sync-dot" id="syncDot"></div><span id="syncTxt">البيانات محفوظة في Google Sheets</span><span style="margin-right:auto;font-size:11px;color:var(--muted)" id="lastSync"></span></div>
-  <div class="toolbar">
-    <input class="tbl-s" placeholder="🔍 ابحث..." oninput="filterTbl(this.value)">
-    <select class="fsel" onchange="filterCat(this.value)"><option value="">كل الفئات</option><option>قطع محرك</option><option>قطع كهرباء</option><option>قطع هيكل</option><option>تعليق وفرامل</option><option>قشاطات</option></select>
-    <button class="btn btn-secondary btn-sm" onclick="loadFromSheets()">🔄 تحديث</button>
-    <button class="btn btn-primary btn-sm" onclick="showTab('add',document.querySelectorAll('.tab')[1])">+ إضافة</button>
-  </div>
-  <div class="tw">
-    <table>
-      <thead><tr><th>صورة</th><th>رقم القطعة</th><th>الاسم</th><th>القياسات</th><th>السعر</th><th>المخزون</th><th>توافق</th><th></th></tr></thead>
-      <tbody id="tblBody"></tbody>
-    </table>
-  </div>
-</div>
-
-<!-- ═══ BARCODE ═══ -->
-<div id="tab-barcode" class="section">
-  <div class="bc-grid">
-    <div class="panel">
-      <div class="panel-title">🏷️ إعداد الملصق</div>
-      <div class="fg" style="margin-bottom:12px"><label>اختر القطعة</label><select id="bc-sel" onchange="updateBC()"></select></div>
-      <div class="fg" style="margin-bottom:12px"><label>اسم المحل</label><input type="text" id="bc-shop" value="قطع غيار السيارات" oninput="updateBC()"></div>
-      <div class="fg" style="margin-bottom:14px"><label>عدد الملصقات</label><input type="number" id="bc-cnt" value="1" min="1"></div>
-      <button class="btn btn-primary" style="width:100%" onclick="printBC()">🖨️ طباعة</button>
-    </div>
-    <div class="panel"><div class="panel-title">👁️ معاينة</div><div style="display:flex;align-items:center;justify-content:center;min-height:200px" id="bc-prev"><div style="color:var(--muted);font-size:13px">اختر قطعة</div></div></div>
-  </div>
-</div>
-
-<!-- ═══ DASH ═══ -->
-<div id="tab-dash" class="section">
-  <div class="kpi-row">
-    <div class="kpi am"><div class="kpi-l">📦 إجمالي القطع</div><div class="kpi-v" id="d-total">—</div><div class="kpi-s">نوع مختلف</div></div>
-    <div class="kpi or"><div class="kpi-l">🔶 القشاطات</div><div class="kpi-v" id="d-belts">—</div><div class="kpi-s">نوع</div></div>
-    <div class="kpi rd"><div class="kpi-l">⚠️ نقص</div><div class="kpi-v" id="d-low">—</div><div class="kpi-s">تحتاج تجديد</div></div>
-    <div class="kpi gr"><div class="kpi-l">💰 القيمة</div><div class="kpi-v" id="d-val">$—</div><div class="kpi-s">تقديري</div></div>
-  </div>
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
-    <div class="panel"><div class="panel-title">⚠️ نقص مخزون</div><div id="d-ll"></div></div>
-    <div class="panel"><div class="panel-title">📊 الفئات</div><div id="d-bar" style="display:flex;align-items:flex-end;gap:8px;height:110px;margin-top:6px"></div><div id="d-lbl" style="display:flex;gap:8px;margin-top:8px;font-size:10px;color:var(--muted);flex-wrap:wrap"></div></div>
-  </div>
-</div>
-
-</div><!-- /main -->
-
-<!-- EDIT MODAL -->
-<div class="overlay" id="editModal">
-  <div class="modal">
-    <div class="modal-title">✏️ تعديل القطعة</div>
-    <div class="mtabs"><button class="mtab active" onclick="swET(0,this)">📋 أساسي</button><button class="mtab" onclick="swET(1,this)">📐 القياسات</button><button class="mtab" onclick="swET(2,this)">🚗 التوافق</button></div>
-    <div class="mtp active" id="et0">
-      <div class="fgrid">
-        <div class="fg full"><label>رقم القطعة</label><input type="text" id="e-num" style="direction:ltr;text-align:right"></div>
-        <div class="fg full"><label>الاسم</label><input type="text" id="e-name"></div>
-        <div class="fg"><label>الفئة</label><select id="e-cat"><option>قطع محرك</option><option>قطع كهرباء</option><option>قطع هيكل</option><option>تعليق وفرامل</option><option>قشاطات</option></select></div>
-        <div class="fg"><label>الماركة</label><input type="text" id="e-brand"></div>
-        <div class="fg"><label>السعر ($)</label><input type="number" id="e-price" step="0.5"></div>
-        <div class="fg"><label>الكمية</label><input type="number" id="e-qty" min="0"></div>
+    <!-- ═══ INVENTORY ═══ -->
+    <div id="tab-inventory" class="section">
+      <div class="sync-row">
+        <div class="sync-dot" id="syncDot"></div><span id="syncTxt">البيانات محفوظة في Google Sheets</span><span
+          style="margin-right:auto;font-size:11px;color:var(--muted)" id="lastSync"></span>
+      </div>
+      <div class="toolbar">
+        <input class="tbl-s" placeholder="🔍 ابحث..." oninput="filterTbl(this.value)">
+        <select class="fsel" onchange="filterCat(this.value)">
+          <option value="">كل الفئات</option>
+          <option>قطع محرك</option>
+          <option>قطع كهرباء</option>
+          <option>قطع هيكل</option>
+          <option>تعليق وفرامل</option>
+          <option>قشاطات</option>
+        </select>
+        <button class="btn btn-secondary btn-sm" onclick="loadFromSheets()">🔄 تحديث</button>
+        <button class="btn btn-primary btn-sm" onclick="showTab('add',document.querySelectorAll('.tab')[1])">+
+          إضافة</button>
+      </div>
+      <div class="tw">
+        <table>
+          <thead>
+            <tr>
+              <th>صورة</th>
+              <th>رقم القطعة</th>
+              <th>الاسم</th>
+              <th>القياسات</th>
+              <th>السعر</th>
+              <th>المخزون</th>
+              <th>توافق</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="tblBody"></tbody>
+        </table>
       </div>
     </div>
-    <div class="mtp" id="et1">
-      <div class="dgrid" style="margin-bottom:10px">
-        <div class="diw"><div class="dil">الطول</div><div class="dir"><input type="number" id="ed-len" step="0.5"><div class="dir-u">mm</div></div></div>
-        <div class="diw"><div class="dil">العرض</div><div class="dir"><input type="number" id="ed-wid" step="0.5"><div class="dir-u">mm</div></div></div>
-        <div class="diw"><div class="dil">السماكة</div><div class="dir"><input type="number" id="ed-hgt" step="0.5"><div class="dir-u">mm</div></div></div>
-        <div class="diw"><div class="dil">ق. داخلي</div><div class="dir"><input type="number" id="ed-inn" step="0.5"><div class="dir-u">mm</div></div></div>
-        <div class="diw"><div class="dil">ق. خارجي</div><div class="dir"><input type="number" id="ed-out" step="0.5"><div class="dir-u">mm</div></div></div>
-        <div class="diw"><div class="dil">الوزن</div><div class="dir"><input type="number" id="ed-wgt" step="0.01"><div class="dir-u">kg</div></div></div>
+
+    <!-- ═══ BARCODE ═══ -->
+    <div id="tab-barcode" class="section">
+      <div class="bc-grid">
+        <div class="panel">
+          <div class="panel-title">🏷️ إعداد الملصق</div>
+          <div class="fg" style="margin-bottom:12px"><label>اختر القطعة</label><select id="bc-sel"
+              onchange="updateBC()"></select></div>
+          <div class="fg" style="margin-bottom:12px"><label>اسم المحل</label><input type="text" id="bc-shop"
+              value="قطع غيار السيارات" oninput="updateBC()"></div>
+          <div class="fg" style="margin-bottom:14px"><label>عدد الملصقات</label><input type="number" id="bc-cnt"
+              value="1" min="1"></div>
+          <button class="btn btn-primary" style="width:100%" onclick="printBC()">🖨️ طباعة</button>
+        </div>
+        <div class="panel">
+          <div class="panel-title">👁️ معاينة</div>
+          <div style="display:flex;align-items:center;justify-content:center;min-height:200px" id="bc-prev">
+            <div style="color:var(--muted);font-size:13px">اختر قطعة</div>
+          </div>
+        </div>
       </div>
-      <div class="fg"><label>رمز بديل</label><input type="text" id="ed-alt"></div>
     </div>
-    <div class="mtp" id="et2"><label style="display:block;margin-bottom:7px">السيارات المتوافقة (سطر لكل سيارة)</label><textarea id="e-fit" style="min-height:110px"></textarea></div>
-    <div class="modal-actions"><button class="btn btn-secondary" onclick="closeEdit()">إلغاء</button><button class="btn btn-primary" onclick="saveEdit()">💾 حفظ في Sheets</button></div>
+
+    <!-- ═══ DASH ═══ -->
+    <div id="tab-dash" class="section">
+      <div class="kpi-row">
+        <div class="kpi am">
+          <div class="kpi-l">📦 إجمالي القطع</div>
+          <div class="kpi-v" id="d-total">—</div>
+          <div class="kpi-s">نوع مختلف</div>
+        </div>
+        <div class="kpi or">
+          <div class="kpi-l">🔶 القشاطات</div>
+          <div class="kpi-v" id="d-belts">—</div>
+          <div class="kpi-s">نوع</div>
+        </div>
+        <div class="kpi rd">
+          <div class="kpi-l">⚠️ نقص</div>
+          <div class="kpi-v" id="d-low">—</div>
+          <div class="kpi-s">تحتاج تجديد</div>
+        </div>
+        <div class="kpi gr">
+          <div class="kpi-l">💰 القيمة</div>
+          <div class="kpi-v" id="d-val">$—</div>
+          <div class="kpi-s">تقديري</div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+        <div class="panel">
+          <div class="panel-title">⚠️ نقص مخزون</div>
+          <div id="d-ll"></div>
+        </div>
+        <div class="panel">
+          <div class="panel-title">📊 الفئات</div>
+          <div id="d-bar" style="display:flex;align-items:flex-end;gap:8px;height:110px;margin-top:6px"></div>
+          <div id="d-lbl" style="display:flex;gap:8px;margin-top:8px;font-size:10px;color:var(--muted);flex-wrap:wrap">
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /main -->
+
+  <!-- EDIT MODAL -->
+  <div class="overlay" id="editModal">
+    <div class="modal">
+      <div class="modal-title">✏️ تعديل القطعة</div>
+      <div class="mtabs"><button class="mtab active" onclick="swET(0,this)">📋 أساسي</button><button class="mtab"
+          onclick="swET(1,this)">📐 القياسات</button><button class="mtab" onclick="swET(2,this)">🚗 التوافق</button>
+      </div>
+      <div class="mtp active" id="et0">
+        <div class="fgrid">
+          <div class="fg full"><label>رقم القطعة</label><input type="text" id="e-num"
+              style="direction:ltr;text-align:right"></div>
+          <div class="fg full"><label>الاسم</label><input type="text" id="e-name"></div>
+          <div class="fg"><label>الفئة</label><select id="e-cat">
+              <option>قطع محرك</option>
+              <option>قطع كهرباء</option>
+              <option>قطع هيكل</option>
+              <option>تعليق وفرامل</option>
+              <option>قشاطات</option>
+            </select></div>
+          <div class="fg"><label>الماركة</label><input type="text" id="e-brand"></div>
+          <div class="fg"><label>السعر ($)</label><input type="number" id="e-price" step="0.5"></div>
+          <div class="fg"><label>الكمية</label><input type="number" id="e-qty" min="0"></div>
+        </div>
+      </div>
+      <div class="mtp" id="et1">
+        <div class="dgrid" style="margin-bottom:10px">
+          <div class="diw">
+            <div class="dil">الطول</div>
+            <div class="dir"><input type="number" id="ed-len" step="0.5">
+              <div class="dir-u">mm</div>
+            </div>
+          </div>
+          <div class="diw">
+            <div class="dil">العرض</div>
+            <div class="dir"><input type="number" id="ed-wid" step="0.5">
+              <div class="dir-u">mm</div>
+            </div>
+          </div>
+          <div class="diw">
+            <div class="dil">السماكة</div>
+            <div class="dir"><input type="number" id="ed-hgt" step="0.5">
+              <div class="dir-u">mm</div>
+            </div>
+          </div>
+          <div class="diw">
+            <div class="dil">ق. داخلي</div>
+            <div class="dir"><input type="number" id="ed-inn" step="0.5">
+              <div class="dir-u">mm</div>
+            </div>
+          </div>
+          <div class="diw">
+            <div class="dil">ق. خارجي</div>
+            <div class="dir"><input type="number" id="ed-out" step="0.5">
+              <div class="dir-u">mm</div>
+            </div>
+          </div>
+          <div class="diw">
+            <div class="dil">الوزن</div>
+            <div class="dir"><input type="number" id="ed-wgt" step="0.01">
+              <div class="dir-u">kg</div>
+            </div>
+          </div>
+        </div>
+        <div class="fg"><label>رمز بديل</label><input type="text" id="ed-alt"></div>
+      </div>
+      <div class="mtp" id="et2"><label style="display:block;margin-bottom:7px">السيارات المتوافقة (سطر لكل
+          سيارة)</label><textarea id="e-fit" style="min-height:110px"></textarea></div>
+      <div class="modal-actions"><button class="btn btn-secondary" onclick="closeEdit()">إلغاء</button><button
+          class="btn btn-primary" onclick="saveEdit()">💾 حفظ في Sheets</button></div>
+    </div>
   </div>
-</div>
 
-<div class="toast" id="toast"></div>
+  <div class="toast" id="toast"></div>
 
-<script>
-// ═══════════════════════════════════════════════════
-//  API CONFIG — ضع رابط Google Apps Script هنا
-// ═══════════════════════════════════════════════════
-let API_URL = localStorage.getItem('gsapi') || '';
+  <script>
+    // ═══════════════════════════════════════════════════
+    //  API CONFIG — ضع رابط Google Apps Script هنا
+    // ═══════════════════════════════════════════════════
+    let API_URL = localStorage.getItem('gsapi') || '';
 
-// ═══════════════════════════════════════════════════
-//  LOCAL STATE (cache من Sheets)
-// ═══════════════════════════════════════════════════
-let DB = [];
-let editingId = null, srchId = null;
-let newImg = null, newFitment = [], newBeltType = '';
-let aiPartData = {};
-let isConnected = false;
+    // ═══════════════════════════════════════════════════
+    //  LOCAL STATE (cache من Sheets)
+    // ═══════════════════════════════════════════════════
+    let DB = [];
+    let editingId = null, srchId = null;
+    let newImg = null, newFitment = [], newBeltType = '';
+    let aiPartData = {};
+    let isConnected = false;
 
-// ══════════════════
-// SETUP / CONNECTION
-// ══════════════════
-function openSetup(){ document.getElementById('setupBanner').classList.add('show'); }
+    // ══════════════════
+    // SETUP / CONNECTION
+    // ══════════════════
+    function openSetup() { document.getElementById('setupBanner').classList.add('show'); }
 
-function saveApiUrl(){
-  const url = document.getElementById('apiUrlInput').value.trim();
-  if(!url || !url.includes('script.google.com')){ toast('⚠️ الرابط غير صحيح','var(--danger)'); return; }
-  API_URL = url;
-  localStorage.setItem('gsapi', url);
-  document.getElementById('setupBanner').classList.remove('show');
-  loadFromSheets();
-}
-
-function testWithDemoData(){
-  document.getElementById('setupBanner').classList.remove('show');
-  DB = getDemoData();
-  setConnected(false, 'وضع التجربة — بدون Sheets');
-  refreshAll();
-  toast('🧪 تعمل بالبيانات التجريبية — للحفظ الحقيقي أضف رابط Sheets','var(--accent)');
-}
-
-function setConnected(ok, label){
-  isConnected = ok;
-  const st = document.getElementById('connStatus');
-  const dt = document.getElementById('connDot');
-  const tx = document.getElementById('connText');
-  st.className = 'conn-status ' + (ok ? 'connected' : label.includes('جاري') ? 'connecting' : 'disconnected');
-  dt.style.background = ok ? 'var(--accent3)' : label.includes('جاري') ? 'var(--accent)' : 'var(--danger)';
-  dt.className = 'conn-dot' + (label.includes('جاري') ? ' pulse' : '');
-  tx.textContent = label;
-}
-
-// ══════════════════
-// GOOGLE SHEETS API
-// ══════════════════
-async function loadFromSheets(){
-  if(!API_URL){ openSetup(); return; }
-  setConnected(false, 'جاري الاتصال...');
-  document.getElementById('loadingScreen').classList.add('show');
-  try{
-    const r = await fetch(API_URL + '?action=getAll');
-    const data = await r.json();
-    if(data.success){
-      DB = data.data.map(normalizePart);
-      setConnected(true, '✓ Google Sheets');
-      document.getElementById('lastSync').textContent = 'آخر تحديث: ' + new Date().toLocaleTimeString('ar');
-      toast('✅ تم تحميل '+DB.length+' قطعة من Google Sheets','var(--accent3)');
-    } else {
-      throw new Error(data.error);
+    function saveApiUrl() {
+      const url = document.getElementById('apiUrlInput').value.trim();
+      if (!url || !url.includes('script.google.com')) { toast('⚠️ الرابط غير صحيح', 'var(--danger)'); return; }
+      API_URL = url;
+      localStorage.setItem('gsapi', url);
+      document.getElementById('setupBanner').classList.remove('show');
+      loadFromSheets();
     }
-  } catch(e){
-    setConnected(false, 'خطأ في الاتصال');
-    toast('❌ تعذر الاتصال — تحقق من الرابط أو اتصالك بالإنترنت','var(--danger)');
-    if(DB.length === 0) DB = getDemoData();
-  }
-  document.getElementById('loadingScreen').classList.remove('show');
-  refreshAll();
-}
 
-async function saveToSheets(part){
-  if(!API_URL || !isConnected){
-    DB.push({...part, id: Date.now()});
-    refreshAll();
-    toast('💾 محفوظ محلياً (غير متصل بـ Sheets)','var(--accent)');
-    return;
-  }
-  setSyncing(true);
-  try{
-    const r = await fetch(API_URL, {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({action:'add', part})
-    });
-    const data = await r.json();
-    if(data.success){
-      part.id = data.id;
-      DB.push(part);
+    function testWithDemoData() {
+      document.getElementById('setupBanner').classList.remove('show');
+      DB = getDemoData();
+      setConnected(false, 'وضع التجربة — بدون Sheets');
       refreshAll();
-      toast('✅ تم الحفظ في Google Sheets!','var(--accent3)');
-    } else { throw new Error(data.error); }
-  } catch(e){
-    toast('❌ خطأ في الحفظ — جرب مرة ثانية','var(--danger)');
-  }
-  setSyncing(false);
-}
-
-async function updateInSheets(part){
-  if(!API_URL || !isConnected){
-    const i = DB.findIndex(p=>p.id===part.id);
-    if(i>=0) DB[i]=part;
-    refreshAll();
-    toast('💾 تم التحديث محلياً','var(--accent)');
-    return;
-  }
-  setSyncing(true);
-  try{
-    await fetch(API_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'update',part})});
-    const i=DB.findIndex(p=>p.id===part.id);
-    if(i>=0)DB[i]=part;
-    refreshAll();
-    toast('✅ تم التحديث في Google Sheets','var(--accent3)');
-  }catch(e){toast('❌ خطأ في التحديث','var(--danger)');}
-  setSyncing(false);
-}
-
-async function deleteInSheets(id){
-  if(!API_URL||!isConnected){DB=DB.filter(p=>p.id!==id);refreshAll();toast('🗑️ تم الحذف محلياً');return;}
-  setSyncing(true);
-  try{
-    await fetch(API_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'delete',id})});
-    DB=DB.filter(p=>p.id!==id);
-    refreshAll();
-    toast('🗑️ تم الحذف من Google Sheets');
-  }catch(e){toast('❌ خطأ في الحذف','var(--danger)');}
-  setSyncing(false);
-}
-
-function setSyncing(v){
-  const d=document.getElementById('syncDot');
-  const t=document.getElementById('syncTxt');
-  d.className='sync-dot'+(v?' syncing':'');
-  t.textContent=v?'جاري المزامنة مع Google Sheets...':'البيانات محفوظة في Google Sheets';
-}
-
-function normalizePart(p){
-  if(typeof p.dims==='string'){try{p.dims=JSON.parse(p.dims);}catch{p.dims={};}}
-  if(typeof p.fitment==='string'){try{p.fitment=JSON.parse(p.fitment);}catch{p.fitment=[];}}
-  if(!p.fitment)p.fitment=[];
-  if(!p.dims)p.dims={};
-  return p;
-}
-
-// ══════════════════
-// TABS
-// ══════════════════
-function showTab(name,el){
-  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
-  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
-  document.getElementById('tab-'+name).classList.add('active');
-  if(el)el.classList.add('active');
-  if(name==='inventory')renderTable(DB);
-  if(name==='barcode'){populateBC();updateBC();}
-  if(name==='dash')renderDash();
-  if(name==='belts')renderBelts(DB.filter(p=>p.cat==='قشاطات'));
-}
-
-function refreshAll(){
-  updateStats();
-  renderTable(DB);
-  renderBelts(DB.filter(p=>p.cat==='قشاطات'));
-  populateBC();
-}
-
-// ══════════════════
-// SEARCH
-// ══════════════════
-function swSrch(m){
-  ['t','i'].forEach(x=>{document.getElementById('sm-'+x).classList.toggle('active',x===m);document.getElementById('sp'+x).classList.toggle('active',x===m);});
-  document.getElementById('resultCard').classList.remove('show');
-}
-
-function qs(v){document.getElementById('srchIn').value=v;doSearch();}
-function doSearch(){
-  const q=document.getElementById('srchIn').value.trim().toLowerCase();
-  const p=DB.find(x=>x.num&&x.num.toLowerCase()===q||x.name&&x.name.includes(q)||x.num&&x.num.toLowerCase().includes(q)||(x.dims&&x.dims.altcode&&x.dims.altcode.toLowerCase().includes(q)));
-  if(!p){document.getElementById('resultCard').classList.remove('show');toast('❌ غير موجودة','var(--danger)');return;}
-  showResult(p);
-}
-
-function showResult(p){
-  srchId=p.id;
-  document.getElementById('r-badge').textContent=p.qty===0?'✗ نفذ':'✓ موجود';
-  document.getElementById('r-badge').className='tag '+(p.qty===0?'out':'found');
-  document.getElementById('r-name').textContent=p.name;
-  document.getElementById('r-num').textContent=p.num+(p.beltType?' — نوع '+p.beltType:'');
-  document.getElementById('r-price').textContent='$'+(parseFloat(p.price)||0).toFixed(2);
-  const qEl=document.getElementById('r-qty');
-  const qty=parseInt(p.qty)||0;
-  if(qty===0){qEl.textContent='نفذ';qEl.className='ibox-v out';}
-  else if(qty<=2){qEl.textContent=qty+' (منخفض)';qEl.className='ibox-v low';}
-  else{qEl.textContent=qty+' قطعة';qEl.className='ibox-v ok';}
-  document.getElementById('r-cat').textContent=(p.cat||'')+'·'+(p.brand||'');
-  const ic=document.getElementById('r-imgcol');
-  ic.innerHTML=p.img?`<img src="${p.img}" style="max-width:100%;max-height:140px;border-radius:8px;object-fit:contain">`:`<div style="text-align:center;color:var(--muted)"><div style="font-size:36px">🔩</div><div style="font-size:10px;margin-top:5px">لا توجد صورة</div></div>`;
-  const d=p.dims||{};
-  let dh='';
-  if(d.altcode)dh+=`<div class="dbadge"><span>الرمز</span>${d.altcode}</div>`;
-  if(d.length)dh+=`<div class="dbadge"><span>الطول</span>${d.length}mm</div>`;
-  if(d.width)dh+=`<div class="dbadge"><span>العرض</span>${d.width}mm</div>`;
-  if(d.height)dh+=`<div class="dbadge"><span>السماكة</span>${d.height}mm</div>`;
-  if(d.inner)dh+=`<div class="dbadge"><span>ق.داخلي</span>${d.inner}mm</div>`;
-  if(d.outer)dh+=`<div class="dbadge"><span>ق.خارجي</span>${d.outer}mm</div>`;
-  if(d.weight)dh+=`<div class="dbadge"><span>الوزن</span>${d.weight}kg</div>`;
-  document.getElementById('r-dims').innerHTML=dh;
-  document.getElementById('r-cnt').textContent=(p.fitment||[]).length;
-  document.getElementById('r-compat').innerHTML=(p.fitment||[]).map(f=>`<div class="cc"><div class="cc-mk">${f.make||''}</div><div class="cc-mdl">${f.model||''}</div><div class="cc-yr">${f.years||''}</div></div>`).join('');
-  document.getElementById('resultCard').classList.add('show');
-}
-
-function editFromSrch(){const p=DB.find(x=>x.id===srchId);if(p)openEdit(p);}
-function printFromSrch(){const p=DB.find(x=>x.id===srchId);if(!p)return;showTab('barcode',document.querySelectorAll('.tab')[4]);populateBC();document.getElementById('bc-sel').value=p.id;updateBC();}
-
-// Image search
-function handleSrchImg(inp){
-  const file=inp.files[0];if(!file)return;
-  const r=new FileReader();
-  r.onload=e=>{
-    document.getElementById('isaPh').style.display='none';
-    const prev=document.getElementById('srchImgPreview');
-    prev.src=e.target.result;prev.style.display='block';
-    document.getElementById('imgSrchArea').classList.add('has-img');
-    analyzeImg(e.target.result);
-  };
-  r.readAsDataURL(file);
-}
-
-async function analyzeImg(b64){
-  document.getElementById('anlOvl').classList.add('show');
-  document.getElementById('aiAnal').classList.remove('show');
-  try{
-    const imgData=b64.split(',')[1];const mt=b64.split(';')[0].split(':')[1];
-    const resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:600,messages:[{role:'user',content:[{type:'image',source:{type:'base64',media_type:mt,data:imgData}},{type:'text',text:'قطعة غيار سيارة. JSON فقط: {"partName":"","category":"","brand":"","condition":"جديدة أو مستعملة","confidence":"عالية أو متوسطة أو منخفضة","possiblePartNumbers":[""],"description":""}'}]}]})});
-    const data=await resp.json();
-    const info=JSON.parse(data.content.map(c=>c.text||'').join('').replace(/```json|```/g,'').trim());
-    aiPartData=info;
-    document.getElementById('ai-pn').textContent=info.partName||'—';
-    document.getElementById('ai-conf').textContent='دقة التعرف: '+info.confidence+' · '+info.description;
-    document.getElementById('ai-cat').textContent=info.category||'—';
-    document.getElementById('ai-brand').textContent=info.brand||'—';
-    document.getElementById('ai-cond').textContent=info.condition||'—';
-    const matches=DB.map(p=>{
-      let s=0;
-      if(info.category&&p.cat&&p.cat.includes(info.category.split(' ')[0]))s+=2;
-      if(info.brand&&p.brand&&p.brand.toLowerCase().includes(info.brand.toLowerCase()))s+=3;
-      if(info.possiblePartNumbers&&info.possiblePartNumbers.some(n=>p.num&&p.num.toLowerCase().includes(n.toLowerCase())))s+=5;
-      if(info.partName&&p.name&&p.name.includes(info.partName.split(' ')[0]))s+=2;
-      return{p,s};
-    }).filter(x=>x.s>0).sort((a,b)=>b.s-a.s).slice(0,4);
-    document.getElementById('ai-matches').innerHTML=matches.length===0
-      ?'<div style="color:var(--muted);font-size:12px;padding:10px">لا توجد مطابقات</div>'
-      :matches.map(m=>`<div class="ai-match" onclick="selectMatch(${m.p.id})"><div><div class="ai-match-name">${m.p.name}</div><div class="ai-match-num">${m.p.num}·${m.p.brand}</div></div><div class="ai-match-pct">تطابق ${Math.min(99,m.s*15)}%</div></div>`).join('');
-    document.getElementById('aiAnal').classList.add('show');
-  }catch(e){toast('⚠️ تعذر تحليل الصورة','var(--danger)');}
-  document.getElementById('anlOvl').classList.remove('show');
-}
-
-function selectMatch(id){const p=DB.find(x=>x.id===id);if(!p)return;showResult(p);swSrch('t');showTab('search',document.querySelectorAll('.tab')[0]);}
-function addFromAI(){showTab('add',document.querySelectorAll('.tab')[1]);if(aiPartData.possiblePartNumbers&&aiPartData.possiblePartNumbers[0])document.getElementById('addNum').value=aiPartData.possiblePartNumbers[0];skipFetch();if(aiPartData.partName)document.getElementById('f-name').value=aiPartData.partName;if(aiPartData.brand)document.getElementById('f-brand').value=aiPartData.brand;}
-function resetImgSrch(){document.getElementById('isaPh').style.display='block';document.getElementById('srchImgPreview').style.display='none';document.getElementById('imgSrchArea').classList.remove('has-img');document.getElementById('aiAnal').classList.remove('show');document.getElementById('imgSrchFile').value='';document.getElementById('camSrch').value='';aiPartData={};}
-
-// ══════════════════
-// ADD PART
-// ══════════════════
-function goS(n){
-  for(let i=1;i<=5;i++){
-    const fi=document.getElementById('fi'+i);const sp=document.getElementById('as'+i);
-    if(!fi||!sp)continue;
-    fi.classList.remove('active','done');sp.classList.remove('active');
-    if(i<n)fi.classList.add('done');
-    else if(i===n){fi.classList.add('active');sp.classList.add('active');}
-  }
-}
-
-async function fetchFill(){
-  const num=document.getElementById('addNum').value.trim();
-  if(!num){toast('⚠️ أدخل رقم القطعة');return;}
-  if(DB.find(x=>x.num&&x.num.toLowerCase()===num.toLowerCase())){toast('ℹ️ هذه القطعة موجودة في مخزونك','var(--accent2)');return;}
-  const btn=document.getElementById('fetchBtn');
-  btn.disabled=true;btn.innerHTML='<div style="width:14px;height:14px;border:2px solid rgba(0,0,0,.3);border-top-color:#000;border-radius:50%;animation:spin .7s linear infinite;display:inline-block"></div> جاري...';
-  try{
-    const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:800,messages:[{role:'user',content:`رقم القطعة: "${num}". JSON فقط: {"name":"الاسم","brand":"الماركة","category":"قطع محرك أو قطع كهرباء أو قطع هيكل أو تعليق وفرامل أو قشاطات","beltType":"A أو B أو AV أو SPZ أو null","dims":{"length":null,"width":null,"height":null,"altcode":""},"fitment":[{"make":"","model":"","years":""}]}`}]})});
-    const d=await r.json();
-    const info=JSON.parse(d.content.map(c=>c.text||'').join('').replace(/```json|```/g,'').trim());
-    prefill(num,info);
-  }catch(e){prefill(num,{name:'',brand:'',category:'قطع محرك',dims:{},fitment:[]});}
-  btn.disabled=false;btn.textContent='🤖 جلب تلقائي';
-}
-
-function skipFetch(){prefill(document.getElementById('addNum').value.trim()||'—',{name:'',brand:'',category:'قطع محرك',dims:{},fitment:[]});}
-
-function prefill(num,info){
-  document.getElementById('f-num').value=num;
-  document.getElementById('f-name').value=info.name||'';
-  document.getElementById('f-brand').value=info.brand||'';
-  document.getElementById('f-cat').value=info.category||'قطع محرك';
-  if(info.dims){document.getElementById('d-len').value=info.dims.length||'';document.getElementById('d-wid').value=info.dims.width||'';document.getElementById('d-hgt').value=info.dims.height||'';document.getElementById('d-alt').value=info.dims.altcode||'';}
-  if(info.beltType){selBT(info.beltType,null);document.getElementById('belt-sec').style.display='block';}
-  newFitment=info.fitment||[];renderFitChips();
-  document.getElementById('f-fit').value=newFitment.map(f=>`${f.make} ${f.model} ${f.years}`).join('\n');
-  document.getElementById('s2n').textContent=info.name||num;
-  document.getElementById('s2num').textContent=num;
-  goS(2);
-}
-
-function handleAddImg(inp){
-  const file=inp.files[0];if(!file)return;
-  const r=new FileReader();
-  r.onload=async e=>{
-    newImg=e.target.result;
-    const prev=document.getElementById('addImgPrev');prev.src=newImg;prev.style.display='block';
-    // AI recognize
-    try{
-      const imgData=newImg.split(',')[1];const mt=newImg.split(';')[0].split(':')[1];
-      const resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:300,messages:[{role:'user',content:[{type:'image',source:{type:'base64',media_type:mt,data:imgData}},{type:'text',text:'JSON فقط: {"partName":"","brand":"","partNumber":""}'}]}]})});
-      const data=await resp.json();
-      const info=JSON.parse(data.content.map(c=>c.text||'').join('').replace(/```json|```/g,'').trim());
-      document.getElementById('addRecogTxt').textContent=`تعرف على: ${info.partName||'—'} · ${info.brand||''}${info.partNumber?' · '+info.partNumber:''}`;
-      document.getElementById('addRecog').style.display='block';
-      if(info.partName&&!document.getElementById('f-name').value)document.getElementById('f-name').value=info.partName;
-      if(info.brand&&!document.getElementById('f-brand').value)document.getElementById('f-brand').value=info.brand;
-    }catch(e){}
-  };
-  r.readAsDataURL(file);
-  goS(3);
-}
-
-function skipAddImg(){newImg=null;goS(3);}
-
-function selBT(t,el){newBeltType=t;document.querySelectorAll('.btb').forEach(b=>b.classList.remove('sel'));if(el)el.classList.add('sel');updBeltCode();}
-function updBeltCode(){if(!newBeltType)return;const len=parseFloat(document.getElementById('d-len').value)||0;const code=newBeltType+'-'+(len?Math.round(len/25.4):'?');document.getElementById('bcp').textContent=code;document.getElementById('bcp-wrap').style.display='block';document.getElementById('d-alt').value=code;}
-
-function renderFitChips(){document.getElementById('fitChips').innerHTML=newFitment.map((f,i)=>`<div class="fchip" onclick="rmFit(${i})">${f.make} ${f.model} <span style="color:var(--muted);font-size:10px">${f.years}</span> <span style="color:var(--danger);font-size:10px">✕</span></div>`).join('');}
-function rmFit(i){newFitment.splice(i,1);renderFitChips();}
-function addFit(){const v=document.getElementById('fit-in').value.trim();if(!v)return;const p=v.split(' ');newFitment.push({make:p[0]||v,model:p[1]||'',years:p.slice(2).join(' ')||''});renderFitChips();document.getElementById('fit-in').value='';}
-
-async function aiFit(){
-  const num=document.getElementById('f-num').value;if(!num){toast('⚠️ أدخل رقم القطعة');return;}
-  toast('🤖 جاري الجلب...','var(--accent2)');
-  try{
-    const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:500,messages:[{role:'user',content:`رقم القطعة: "${num}". JSON فقط: [{"make":"","model":"","years":""}] — 5-8 سيارات`}]})});
-    const d=await r.json();
-    newFitment=JSON.parse(d.content.map(c=>c.text||'').join('').replace(/```json|```/g,'').trim());
-    renderFitChips();
-    document.getElementById('f-fit').value=newFitment.map(f=>`${f.make} ${f.model} ${f.years}`).join('\n');
-    toast('✅ تم جلب '+newFitment.length+' سيارة','var(--accent3)');
-  }catch(e){toast('⚠️ تعذر الجلب','var(--danger)');}
-}
-
-async function savePart(){
-  const name=document.getElementById('f-name').value.trim();
-  const num=document.getElementById('f-num').value.trim();
-  const price=parseFloat(document.getElementById('f-price').value)||0;
-  const qty=parseInt(document.getElementById('f-qty').value)||0;
-  if(!name||!num){toast('⚠️ الاسم والرقم مطلوبان','var(--accent)');return;}
-  if(!price){toast('⚠️ أدخل السعر','var(--accent)');return;}
-  const txt=document.getElementById('f-fit').value.trim().split('\n').filter(Boolean);
-  const fit=newFitment.length>0?newFitment:txt.map(l=>{const p=l.split(' ');return{make:p[0]||'',model:p[1]||'',years:p.slice(2).join(' ')||''};});
-  const part={num,name,cat:document.getElementById('f-cat').value,brand:document.getElementById('f-brand').value||'غير محدد',price,qty,img:newImg||'',beltType:newBeltType||'',
-    dims:{length:parseFloat(document.getElementById('d-len').value)||null,width:parseFloat(document.getElementById('d-wid').value)||null,height:parseFloat(document.getElementById('d-hgt').value)||null,inner:parseFloat(document.getElementById('d-inn').value)||null,outer:parseFloat(document.getElementById('d-out').value)||null,weight:parseFloat(document.getElementById('d-wgt').value)||null,altcode:document.getElementById('d-alt').value||''},
-    notes:document.getElementById('f-notes').value,fitment:fit};
-  const btn=document.getElementById('saveBtn');btn.disabled=true;btn.textContent='جاري الحفظ...';
-  await saveToSheets(part);
-  btn.disabled=false;btn.textContent='💾 حفظ في Google Sheets';
-  // Reset form
-  newImg=null;newFitment=[];newBeltType='';
-  document.getElementById('addNum').value='';
-  document.getElementById('addImgPrev').style.display='none';
-  document.getElementById('addRecog').style.display='none';
-  goS(1);
-}
-
-// ══════════════════
-// BELTS
-// ══════════════════
-function renderBelts(data){
-  document.getElementById('belt-cnt').textContent='('+data.length+')';
-  document.getElementById('beltRes').innerHTML=data.length===0?'<div style="color:var(--muted);font-size:13px;padding:20px">لا توجد قشاطات</div>':data.map(p=>{const d=p.dims||{};return`<div class="bcard" onclick="beltClick(${p.id})"><div class="bcard-type">نوع ${p.beltType||'—'}</div>${p.img?`<img src="${p.img}" class="bcard-img-wrap" style="object-fit:contain">`:'<div class="bcard-img-wrap">🔶</div>'}<div class="bcard-code">${d.altcode||p.num}</div><div class="bcard-name">${p.name}</div><div class="bcard-dims">${d.length?`<div class="bdim">طول:${d.length}mm</div>`:''}${d.width?`<div class="bdim">عرض:${d.width}mm</div>`:''}${d.height?`<div class="bdim">سماكة:${d.height}mm</div>`:''}</div><div style="font-size:11px;color:${p.qty===0?'var(--danger)':p.qty<=2?'var(--accent)':'var(--accent3)'}">${p.qty===0?'⚠️ نفذ':p.qty<=2?'▼'+p.qty+' متبقي':'✓'+p.qty+' قطعة'}</div></div>`;}).join('');
-}
-function beltClick(id){const p=DB.find(x=>x.id===id);if(!p)return;showResult(p);swSrch('t');showTab('search',document.querySelectorAll('.tab')[0]);}
-function srchBelts(){const code=document.getElementById('bs-code').value.trim().toLowerCase();const len=parseFloat(document.getElementById('bs-len').value)||null;const wid=parseFloat(document.getElementById('bs-wid').value)||null;let res=DB.filter(p=>p.cat==='قشاطات');if(code)res=res.filter(p=>p.num&&p.num.toLowerCase().includes(code)||(p.dims&&p.dims.altcode&&p.dims.altcode.toLowerCase().includes(code)));if(len)res=res.filter(p=>p.dims&&p.dims.length&&Math.abs(p.dims.length-len)<=25);if(wid)res=res.filter(p=>p.dims&&p.dims.width&&Math.abs(p.dims.width-wid)<=2);renderBelts(res);toast(res.length===0?'لا نتائج':'✓ '+res.length+' قشاطة',res.length===0?'var(--accent)':'var(--accent3)');}
-function addBelt(){showTab('add',document.querySelectorAll('.tab')[1]);document.getElementById('f-cat').value='قشاطات';document.getElementById('belt-sec').style.display='block';skipFetch();goS(3);}
-
-// ══════════════════
-// TABLE
-// ══════════════════
-function renderTable(data){
-  document.getElementById('tblBody').innerHTML=data.map(p=>{
-    const qty=parseInt(p.qty)||0;
-    const sb=qty===0?'<span class="sbadge out">✗</span>':qty<=2?`<span class="sbadge low">▼${qty}</span>`:`<span class="sbadge ok">✓${qty}</span>`;
-    const img=p.img?`<img src="${p.img}" class="thumb">`:'<div class="no-thumb">🔩</div>';
-    const d=p.dims||{};const ds=[d.altcode,d.length&&d.length+'mm',d.width&&'×'+d.width].filter(Boolean).join(' ');
-    return`<tr><td>${img}</td><td class="pnum">${p.num||''}</td><td><b>${p.name||''}</b><div style="font-size:10px;color:var(--muted)">${p.brand||''}</div></td><td style="font-size:10px;color:var(--dim);font-family:'IBM Plex Mono',monospace">${ds||'—'}</td><td><b>$${(parseFloat(p.price)||0).toFixed(2)}</b></td><td>${sb}</td><td style="font-size:10px;color:var(--muted)">${(p.fitment||[]).length}🚗</td><td style="white-space:nowrap"><button class="iBtn" onclick="openEdit(DB.find(x=>x.id==${p.id}))">✏️</button><button class="iBtn" onclick="delPart(${JSON.stringify(p.id)})" style="border-color:var(--danger)">🗑️</button></td></tr>`;
-  }).join('');
-}
-function filterTbl(q){renderTable(DB.filter(p=>(p.name&&p.name.includes(q))||(p.num&&p.num.toLowerCase().includes(q.toLowerCase()))||(p.brand&&p.brand.includes(q))));}
-function filterCat(c){renderTable(c?DB.filter(p=>p.cat===c):DB);}
-async function delPart(id){if(!confirm('حذف؟'))return;await deleteInSheets(id);}
-
-// ══════════════════
-// EDIT MODAL
-// ══════════════════
-function swET(i,el){['et0','et1','et2'].forEach((id,j)=>document.getElementById(id).classList.toggle('active',j===i));document.querySelectorAll('#editModal .mtab').forEach(t=>t.classList.remove('active'));el.classList.add('active');}
-function openEdit(p){
-  editingId=p.id;
-  ['num','name','cat','brand','price','qty'].forEach(k=>document.getElementById('e-'+k).value=p[k]||'');
-  const d=p.dims||{};
-  ['len','wid','hgt','inn','out','wgt'].forEach((k,i)=>document.getElementById('ed-'+k).value=([d.length,d.width,d.height,d.inner,d.outer,d.weight][i])||'');
-  document.getElementById('ed-alt').value=d.altcode||'';
-  document.getElementById('e-fit').value=(p.fitment||[]).map(f=>`${f.make} ${f.model} ${f.years}`).join('\n');
-  document.getElementById('editModal').classList.add('show');
-}
-function closeEdit(){document.getElementById('editModal').classList.remove('show');}
-async function saveEdit(){
-  const idx=DB.findIndex(p=>p.id===editingId);if(idx<0)return;
-  const updated={...DB[idx],num:document.getElementById('e-num').value,name:document.getElementById('e-name').value,cat:document.getElementById('e-cat').value,brand:document.getElementById('e-brand').value,price:parseFloat(document.getElementById('e-price').value)||0,qty:parseInt(document.getElementById('e-qty').value)||0,
-    dims:{length:parseFloat(document.getElementById('ed-len').value)||null,width:parseFloat(document.getElementById('ed-wid').value)||null,height:parseFloat(document.getElementById('ed-hgt').value)||null,inner:parseFloat(document.getElementById('ed-inn').value)||null,outer:parseFloat(document.getElementById('ed-out').value)||null,weight:parseFloat(document.getElementById('ed-wgt').value)||null,altcode:document.getElementById('ed-alt').value||''},
-    fitment:document.getElementById('e-fit').value.trim().split('\n').filter(Boolean).map(l=>{const p=l.split(' ');return{make:p[0]||'',model:p[1]||'',years:p.slice(2).join(' ')||''};})};
-  closeEdit();
-  await updateInSheets(updated);
-}
-
-// ══════════════════
-// BARCODE
-// ══════════════════
-function buildBars(seed){let h='';const r=s=>{let x=Math.sin(s)*10000;return x-Math.floor(x);};for(let i=0;i<48;i++){const w=r(seed*100+i)<.4?3:r(seed*50+i)<.6?2:1;const ht=r(seed*30+i)<.15?34:44;h+=`<div class="bar" style="width:${w}px;height:${ht}px"></div>`;}return h;}
-function buildLabel(p,shop){const seed=(p.num||'').split('').reduce((a,c)=>a+c.charCodeAt(0),0);const d=p.dims||{};const ds=[d.altcode,d.length&&d.length+'mm',d.width&&'×'+d.width+'mm'].filter(Boolean).join(' ');return`<div class="bc-label"><div class="bc-shop">${shop}</div>${p.img?`<img src="${p.img}" style="width:55px;height:36px;object-fit:contain;margin:3px 0">`:''}<div class="bc-name">${p.name||''}</div><div class="bc-bars">${buildBars(seed)}</div><div class="bc-price">$${(parseFloat(p.price)||0).toFixed(2)}</div><div class="bc-num">${p.num||''} · ${p.brand||''}</div>${ds?`<div class="bc-dims-lbl">📐 ${ds}</div>`:''}</div>`;}
-function populateBC(){document.getElementById('bc-sel').innerHTML='<option value="">-- اختر قطعة --</option>'+DB.map(p=>`<option value="${p.id}">${p.name||''} (${p.num||''})</option>`).join('');}
-function updateBC(){const id=document.getElementById('bc-sel').value;const shop=document.getElementById('bc-shop').value;const prev=document.getElementById('bc-prev');if(!id){prev.innerHTML='<div style="color:var(--muted);font-size:13px">اختر قطعة</div>';return;}const p=DB.find(x=>String(x.id)===String(id));if(p)prev.innerHTML=buildLabel(p,shop);}
-function printBC(){toast('🖨️ جاري الطباعة...','var(--accent2)');}
-
-// ══════════════════
-// DASHBOARD
-// ══════════════════
-function renderDash(){
-  document.getElementById('d-total').textContent=DB.length;
-  document.getElementById('d-belts').textContent=DB.filter(p=>p.cat==='قشاطات').length;
-  const low=DB.filter(p=>parseInt(p.qty)<=2);
-  document.getElementById('d-low').textContent=low.length;
-  document.getElementById('d-val').textContent='$'+DB.reduce((s,p)=>s+(parseFloat(p.price)||0)*(parseInt(p.qty)||0),0).toFixed(0);
-  document.getElementById('d-ll').innerHTML=low.length===0?'<div style="color:var(--muted);font-size:12px;padding:10px 0">لا يوجد نقص 👍</div>':low.map(p=>`<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(46,51,72,.4)"><div><div style="font-size:12px;font-weight:700">${p.name||''}</div><div style="font-size:10px;color:var(--muted)">${p.num||''}</div></div><div style="font-size:11px;font-weight:700;color:${parseInt(p.qty)===0?'var(--danger)':'var(--accent)'}">${parseInt(p.qty)===0?'نفذ!':p.qty+' متبقي'}</div></div>`).join('');
-  const cats=['قطع محرك','قطع كهرباء','قطع هيكل','تعليق وفرامل','قشاطات'];const clrs=['var(--accent)','var(--accent2)','var(--accent3)','var(--purple)','var(--orange)'];const cnts=cats.map(c=>DB.filter(p=>p.cat===c).length);const mx=Math.max(...cnts,1);
-  document.getElementById('d-bar').innerHTML=cnts.map((c,i)=>`<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%"><div style="font-size:11px;font-weight:700;margin-bottom:2px">${c}</div><div style="width:100%;height:${Math.round(c/mx*100)}%;background:${clrs[i]};border-radius:3px 3px 0 0;min-height:3px"></div></div>`).join('');
-  document.getElementById('d-lbl').innerHTML=cats.map((c,i)=>`<div style="flex:1;display:flex;align-items:center;gap:3px;justify-content:center"><div style="width:6px;height:6px;border-radius:50%;background:${clrs[i]}"></div>${c.replace('قطع ','')}</div>`).join('');
-}
-
-// ══════════════════
-// UTILS
-// ══════════════════
-function updateStats(){document.getElementById('h-total').textContent=DB.length;document.getElementById('h-belts').textContent=DB.filter(p=>p.cat==='قشاطات').length;}
-function toast(msg,bg='var(--accent3)'){const t=document.getElementById('toast');t.textContent=msg;t.style.background=bg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3000);}
-
-function getDemoData(){
-  return[
-    {id:1,num:'0451103079',name:'فلتر زيت بوش',cat:'قطع محرك',brand:'BOSCH',price:8.5,qty:15,img:null,beltType:null,dims:{length:76,width:76,height:89,inner:62,outer:76,weight:0.15,altcode:''},fitment:[{make:'تويوتا',model:'كامري',years:'2012-2020'},{make:'هوندا',model:'أكورد',years:'2013-2020'}]},
-    {id:2,num:'A-42',name:'قشاطة مروحة A-42',cat:'قشاطات',brand:'Gates',price:6.5,qty:12,img:null,beltType:'A',dims:{length:1067,width:13,height:8,altcode:'A-42'},fitment:[{make:'تويوتا',model:'كورولا',years:'2000-2012'},{make:'هوندا',model:'سيفيك',years:'1999-2010'}]},
-    {id:3,num:'B-54',name:'قشاطة مروحة B-54',cat:'قشاطات',brand:'Bando',price:8.0,qty:8,img:null,beltType:'B',dims:{length:1372,width:17,height:11,altcode:'B-54'},fitment:[{make:'تويوتا',model:'كامري',years:'2002-2009'}]},
-    {id:4,num:'4414554',name:'طقم شمعات NGK',cat:'قطع كهرباء',brand:'NGK',price:18,qty:2,img:null,beltType:null,dims:{altcode:'BKR5E-11'},fitment:[{make:'تويوتا',model:'كامري',years:'2007-2018'}]},
-    {id:5,num:'1J0698151G',name:'طقم فرامل فولكس',cat:'تعليق وفرامل',brand:'TRW',price:45,qty:0,img:null,beltType:null,dims:{width:122,height:16},fitment:[{make:'فولكس',model:'جيتا',years:'2005-2014'}]},
-  ];
-}
-
-function makeCallbackName(){
-  return 'gsapi_cb_' + Date.now() + '_' + Math.random().toString(36).slice(2);
-}
-
-function jsonpRequest(params){
-  return new Promise((resolve, reject) => {
-    const callback = makeCallbackName();
-    const script = document.createElement('script');
-    const query = new URLSearchParams({...params, callback});
-    const sep = API_URL.includes('?') ? '&' : '?';
-    const timeout = setTimeout(() => {
-      cleanup();
-      reject(new Error('JSONP timeout'));
-    }, 15000);
-
-    function cleanup(){
-      clearTimeout(timeout);
-      delete window[callback];
-      script.remove();
+      toast('🧪 تعمل بالبيانات التجريبية — للحفظ الحقيقي أضف رابط Sheets', 'var(--accent)');
     }
 
-    window[callback] = data => {
-      cleanup();
-      resolve(data);
-    };
+    function setConnected(ok, label) {
+      isConnected = ok;
+      const st = document.getElementById('connStatus');
+      const dt = document.getElementById('connDot');
+      const tx = document.getElementById('connText');
+      st.className = 'conn-status ' + (ok ? 'connected' : label.includes('جاري') ? 'connecting' : 'disconnected');
+      dt.style.background = ok ? 'var(--accent3)' : label.includes('جاري') ? 'var(--accent)' : 'var(--danger)';
+      dt.className = 'conn-dot' + (label.includes('جاري') ? ' pulse' : '');
+      tx.textContent = label;
+    }
 
-    script.onerror = () => {
-      cleanup();
-      reject(new Error('JSONP load failed'));
-    };
+    // ══════════════════
+    // GOOGLE SHEETS API
+    // ══════════════════
+    async function loadFromSheets() {
+      if (!API_URL) { openSetup(); return; }
+      setConnected(false, 'جاري الاتصال...');
+      document.getElementById('loadingScreen').classList.add('show');
+      try {
+        const r = await fetch(API_URL + '?action=getAll');
+        const data = await r.json();
+        if (data.success) {
+          DB = data.data.map(normalizePart);
+          setConnected(true, '✓ Google Sheets');
+          document.getElementById('lastSync').textContent = 'آخر تحديث: ' + new Date().toLocaleTimeString('ar');
+          toast('✅ تم تحميل ' + DB.length + ' قطعة من Google Sheets', 'var(--accent3)');
+        } else {
+          throw new Error(data.error);
+        }
+      } catch (e) {
+        setConnected(false, 'خطأ في الاتصال');
+        toast('❌ تعذر الاتصال — تحقق من الرابط أو اتصالك بالإنترنت', 'var(--danger)');
+        if (DB.length === 0) DB = getDemoData();
+      }
+      document.getElementById('loadingScreen').classList.remove('show');
+      refreshAll();
+    }
 
-    script.src = API_URL + sep + query.toString();
-    document.body.appendChild(script);
-  });
-}
+    async function saveToSheets(part) {
+      if (!API_URL || !isConnected) {
+        DB.push({ ...part, id: Date.now() });
+        refreshAll();
+        toast('💾 محفوظ محلياً (غير متصل بـ Sheets)', 'var(--accent)');
+        return;
+      }
+      setSyncing(true);
+      try {
+        const r = await fetch(API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'add', part })
+        });
+        const data = await r.json();
+        if (data.success) {
+          part.id = data.id;
+          DB.push(part);
+          refreshAll();
+          toast('✅ تم الحفظ في Google Sheets!', 'var(--accent3)');
+        } else { throw new Error(data.error); }
+      } catch (e) {
+        toast('❌ خطأ في الحفظ — جرب مرة ثانية', 'var(--danger)');
+      }
+      setSyncing(false);
+    }
 
-function submitToSheets(payload){
-  if(!API_URL){
-    return Promise.reject(new Error('Missing API URL'));
-  }
+    async function updateInSheets(part) {
+      if (!API_URL || !isConnected) {
+        const i = DB.findIndex(p => p.id === part.id);
+        if (i >= 0) DB[i] = part;
+        refreshAll();
+        toast('💾 تم التحديث محلياً', 'var(--accent)');
+        return;
+      }
+      setSyncing(true);
+      try {
+        await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'update', part }) });
+        const i = DB.findIndex(p => p.id === part.id);
+        if (i >= 0) DB[i] = part;
+        refreshAll();
+        toast('✅ تم التحديث في Google Sheets', 'var(--accent3)');
+      } catch (e) { toast('❌ خطأ في التحديث', 'var(--danger)'); }
+      setSyncing(false);
+    }
 
-  return fetch(API_URL, {
-    method:'POST',
-    mode:'no-cors',
-    headers:{'Content-Type':'text/plain;charset=utf-8'},
-    body: JSON.stringify(payload)
-  }).then(() => ({success:true}));
-}
+    async function deleteInSheets(id) {
+      if (!API_URL || !isConnected) { DB = DB.filter(p => p.id !== id); refreshAll(); toast('🗑️ تم الحذف محلياً'); return; }
+      setSyncing(true);
+      try {
+        await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'delete', id }) });
+        DB = DB.filter(p => p.id !== id);
+        refreshAll();
+        toast('🗑️ تم الحذف من Google Sheets');
+      } catch (e) { toast('❌ خطأ في الحذف', 'var(--danger)'); }
+      setSyncing(false);
+    }
 
-async function loadFromSheets(){
-  if(!API_URL){ openSetup(); return; }
-  setConnected(false, 'Ø¬Ø§Ø±ÙŠ Ø§Ù„Ø§ØªØµØ§Ù„...');
-  document.getElementById('loadingScreen').classList.add('show');
-  try{
-    const data = await jsonpRequest({action:'getAll'});
-    if(data.success){
-      DB = data.data.map(normalizePart);
-      setConnected(true, 'âœ“ Google Sheets');
-      document.getElementById('lastSync').textContent = 'Ø¢Ø®Ø± ØªØ­Ø¯ÙŠØ«: ' + new Date().toLocaleTimeString('ar');
-      toast('âœ… ØªÙ… ØªØ­Ù…ÙŠÙ„ '+DB.length+' Ù‚Ø·Ø¹Ø© Ù…Ù† Google Sheets','var(--accent3)');
+    function setSyncing(v) {
+      const d = document.getElementById('syncDot');
+      const t = document.getElementById('syncTxt');
+      d.className = 'sync-dot' + (v ? ' syncing' : '');
+      t.textContent = v ? 'جاري المزامنة مع Google Sheets...' : 'البيانات محفوظة في Google Sheets';
+    }
+
+    function normalizePart(p) {
+      if (typeof p.dims === 'string') { try { p.dims = JSON.parse(p.dims); } catch { p.dims = {}; } }
+      if (typeof p.fitment === 'string') { try { p.fitment = JSON.parse(p.fitment); } catch { p.fitment = []; } }
+      if (!p.fitment) p.fitment = [];
+      if (!p.dims) p.dims = {};
+      return p;
+    }
+
+    // ══════════════════
+    // TABS
+    // ══════════════════
+    function showTab(name, el) {
+      document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.getElementById('tab-' + name).classList.add('active');
+      if (el) el.classList.add('active');
+      if (name === 'inventory') renderTable(DB);
+      if (name === 'barcode') { populateBC(); updateBC(); }
+      if (name === 'dash') renderDash();
+      if (name === 'belts') renderBelts(DB.filter(p => p.cat === 'قشاطات'));
+    }
+
+    function refreshAll() {
+      updateStats();
+      renderTable(DB);
+      renderBelts(DB.filter(p => p.cat === 'قشاطات'));
+      populateBC();
+    }
+
+    // ══════════════════
+    // SEARCH
+    // ══════════════════
+    function swSrch(m) {
+      ['t', 'i'].forEach(x => { document.getElementById('sm-' + x).classList.toggle('active', x === m); document.getElementById('sp' + x).classList.toggle('active', x === m); });
+      document.getElementById('resultCard').classList.remove('show');
+    }
+
+    function qs(v) { document.getElementById('srchIn').value = v; doSearch(); }
+    function doSearch() {
+      const q = document.getElementById('srchIn').value.trim().toLowerCase();
+      const p = DB.find(x => x.num && x.num.toLowerCase() === q || x.name && x.name.includes(q) || x.num && x.num.toLowerCase().includes(q) || (x.dims && x.dims.altcode && x.dims.altcode.toLowerCase().includes(q)));
+      if (!p) { document.getElementById('resultCard').classList.remove('show'); toast('❌ غير موجودة', 'var(--danger)'); return; }
+      showResult(p);
+    }
+
+    function showResult(p) {
+      srchId = p.id;
+      document.getElementById('r-badge').textContent = p.qty === 0 ? '✗ نفذ' : '✓ موجود';
+      document.getElementById('r-badge').className = 'tag ' + (p.qty === 0 ? 'out' : 'found');
+      document.getElementById('r-name').textContent = p.name;
+      document.getElementById('r-num').textContent = p.num + (p.beltType ? ' — نوع ' + p.beltType : '');
+      document.getElementById('r-price').textContent = '$' + (parseFloat(p.price) || 0).toFixed(2);
+      const qEl = document.getElementById('r-qty');
+      const qty = parseInt(p.qty) || 0;
+      if (qty === 0) { qEl.textContent = 'نفذ'; qEl.className = 'ibox-v out'; }
+      else if (qty <= 2) { qEl.textContent = qty + ' (منخفض)'; qEl.className = 'ibox-v low'; }
+      else { qEl.textContent = qty + ' قطعة'; qEl.className = 'ibox-v ok'; }
+      document.getElementById('r-cat').textContent = (p.cat || '') + '·' + (p.brand || '');
+      const ic = document.getElementById('r-imgcol');
+      ic.innerHTML = p.img ? `<img src="${p.img}" style="max-width:100%;max-height:140px;border-radius:8px;object-fit:contain">` : `<div style="text-align:center;color:var(--muted)"><div style="font-size:36px">🔩</div><div style="font-size:10px;margin-top:5px">لا توجد صورة</div></div>`;
+      const d = p.dims || {};
+      let dh = '';
+      if (d.altcode) dh += `<div class="dbadge"><span>الرمز</span>${d.altcode}</div>`;
+      if (d.length) dh += `<div class="dbadge"><span>الطول</span>${d.length}mm</div>`;
+      if (d.width) dh += `<div class="dbadge"><span>العرض</span>${d.width}mm</div>`;
+      if (d.height) dh += `<div class="dbadge"><span>السماكة</span>${d.height}mm</div>`;
+      if (d.inner) dh += `<div class="dbadge"><span>ق.داخلي</span>${d.inner}mm</div>`;
+      if (d.outer) dh += `<div class="dbadge"><span>ق.خارجي</span>${d.outer}mm</div>`;
+      if (d.weight) dh += `<div class="dbadge"><span>الوزن</span>${d.weight}kg</div>`;
+      document.getElementById('r-dims').innerHTML = dh;
+      document.getElementById('r-cnt').textContent = (p.fitment || []).length;
+      document.getElementById('r-compat').innerHTML = (p.fitment || []).map(f => `<div class="cc"><div class="cc-mk">${f.make || ''}</div><div class="cc-mdl">${f.model || ''}</div><div class="cc-yr">${f.years || ''}</div></div>`).join('');
+      document.getElementById('resultCard').classList.add('show');
+    }
+
+    function editFromSrch() { const p = DB.find(x => x.id === srchId); if (p) openEdit(p); }
+    function printFromSrch() { const p = DB.find(x => x.id === srchId); if (!p) return; showTab('barcode', document.querySelectorAll('.tab')[4]); populateBC(); document.getElementById('bc-sel').value = p.id; updateBC(); }
+
+    // Image search
+    function handleSrchImg(inp) {
+      const file = inp.files[0]; if (!file) return;
+      const r = new FileReader();
+      r.onload = e => {
+        document.getElementById('isaPh').style.display = 'none';
+        const prev = document.getElementById('srchImgPreview');
+        prev.src = e.target.result; prev.style.display = 'block';
+        document.getElementById('imgSrchArea').classList.add('has-img');
+        analyzeImg(e.target.result);
+      };
+      r.readAsDataURL(file);
+    }
+
+    async function analyzeImg(b64) {
+      document.getElementById('anlOvl').classList.add('show');
+      document.getElementById('aiAnal').classList.remove('show');
+      try {
+        const imgData = b64.split(',')[1]; const mt = b64.split(';')[0].split(':')[1];
+        const resp = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 600, messages: [{ role: 'user', content: [{ type: 'image', source: { type: 'base64', media_type: mt, data: imgData } }, { type: 'text', text: 'قطعة غيار سيارة. JSON فقط: {"partName":"","category":"","brand":"","condition":"جديدة أو مستعملة","confidence":"عالية أو متوسطة أو منخفضة","possiblePartNumbers":[""],"description":""}' }] }] }) });
+        const data = await resp.json();
+        const info = JSON.parse(data.content.map(c => c.text || '').join('').replace(/```json|```/g, '').trim());
+        aiPartData = info;
+        document.getElementById('ai-pn').textContent = info.partName || '—';
+        document.getElementById('ai-conf').textContent = 'دقة التعرف: ' + info.confidence + ' · ' + info.description;
+        document.getElementById('ai-cat').textContent = info.category || '—';
+        document.getElementById('ai-brand').textContent = info.brand || '—';
+        document.getElementById('ai-cond').textContent = info.condition || '—';
+        const matches = DB.map(p => {
+          let s = 0;
+          if (info.category && p.cat && p.cat.includes(info.category.split(' ')[0])) s += 2;
+          if (info.brand && p.brand && p.brand.toLowerCase().includes(info.brand.toLowerCase())) s += 3;
+          if (info.possiblePartNumbers && info.possiblePartNumbers.some(n => p.num && p.num.toLowerCase().includes(n.toLowerCase()))) s += 5;
+          if (info.partName && p.name && p.name.includes(info.partName.split(' ')[0])) s += 2;
+          return { p, s };
+        }).filter(x => x.s > 0).sort((a, b) => b.s - a.s).slice(0, 4);
+        document.getElementById('ai-matches').innerHTML = matches.length === 0
+          ? '<div style="color:var(--muted);font-size:12px;padding:10px">لا توجد مطابقات</div>'
+          : matches.map(m => `<div class="ai-match" onclick="selectMatch(${m.p.id})"><div><div class="ai-match-name">${m.p.name}</div><div class="ai-match-num">${m.p.num}·${m.p.brand}</div></div><div class="ai-match-pct">تطابق ${Math.min(99, m.s * 15)}%</div></div>`).join('');
+        document.getElementById('aiAnal').classList.add('show');
+      } catch (e) { toast('⚠️ تعذر تحليل الصورة', 'var(--danger)'); }
+      document.getElementById('anlOvl').classList.remove('show');
+    }
+
+    function selectMatch(id) { const p = DB.find(x => x.id === id); if (!p) return; showResult(p); swSrch('t'); showTab('search', document.querySelectorAll('.tab')[0]); }
+    function addFromAI() { showTab('add', document.querySelectorAll('.tab')[1]); if (aiPartData.possiblePartNumbers && aiPartData.possiblePartNumbers[0]) document.getElementById('addNum').value = aiPartData.possiblePartNumbers[0]; skipFetch(); if (aiPartData.partName) document.getElementById('f-name').value = aiPartData.partName; if (aiPartData.brand) document.getElementById('f-brand').value = aiPartData.brand; }
+    function resetImgSrch() { document.getElementById('isaPh').style.display = 'block'; document.getElementById('srchImgPreview').style.display = 'none'; document.getElementById('imgSrchArea').classList.remove('has-img'); document.getElementById('aiAnal').classList.remove('show'); document.getElementById('imgSrchFile').value = ''; document.getElementById('camSrch').value = ''; aiPartData = {}; }
+
+    // ══════════════════
+    // ADD PART
+    // ══════════════════
+    function goS(n) {
+      for (let i = 1; i <= 5; i++) {
+        const fi = document.getElementById('fi' + i); const sp = document.getElementById('as' + i);
+        if (!fi || !sp) continue;
+        fi.classList.remove('active', 'done'); sp.classList.remove('active');
+        if (i < n) fi.classList.add('done');
+        else if (i === n) { fi.classList.add('active'); sp.classList.add('active'); }
+      }
+    }
+
+    async function fetchFill() {
+      const num = document.getElementById('addNum').value.trim();
+      if (!num) { toast('⚠️ أدخل رقم القطعة'); return; }
+      if (DB.find(x => x.num && x.num.toLowerCase() === num.toLowerCase())) { toast('ℹ️ هذه القطعة موجودة في مخزونك', 'var(--accent2)'); return; }
+      const btn = document.getElementById('fetchBtn');
+      btn.disabled = true; btn.innerHTML = '<div style="width:14px;height:14px;border:2px solid rgba(0,0,0,.3);border-top-color:#000;border-radius:50%;animation:spin .7s linear infinite;display:inline-block"></div> جاري...';
+      try {
+        const r = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 800, messages: [{ role: 'user', content: `رقم القطعة: "${num}". JSON فقط: {"name":"الاسم","brand":"الماركة","category":"قطع محرك أو قطع كهرباء أو قطع هيكل أو تعليق وفرامل أو قشاطات","beltType":"A أو B أو AV أو SPZ أو null","dims":{"length":null,"width":null,"height":null,"altcode":""},"fitment":[{"make":"","model":"","years":""}]}` }] }) });
+        const d = await r.json();
+        const info = JSON.parse(d.content.map(c => c.text || '').join('').replace(/```json|```/g, '').trim());
+        prefill(num, info);
+      } catch (e) { prefill(num, { name: '', brand: '', category: 'قطع محرك', dims: {}, fitment: [] }); }
+      btn.disabled = false; btn.textContent = '🤖 جلب تلقائي';
+    }
+
+    function skipFetch() { prefill(document.getElementById('addNum').value.trim() || '—', { name: '', brand: '', category: 'قطع محرك', dims: {}, fitment: [] }); }
+
+    function prefill(num, info) {
+      document.getElementById('f-num').value = num;
+      document.getElementById('f-name').value = info.name || '';
+      document.getElementById('f-brand').value = info.brand || '';
+      document.getElementById('f-cat').value = info.category || 'قطع محرك';
+      if (info.dims) { document.getElementById('d-len').value = info.dims.length || ''; document.getElementById('d-wid').value = info.dims.width || ''; document.getElementById('d-hgt').value = info.dims.height || ''; document.getElementById('d-alt').value = info.dims.altcode || ''; }
+      if (info.beltType) { selBT(info.beltType, null); document.getElementById('belt-sec').style.display = 'block'; }
+      newFitment = info.fitment || []; renderFitChips();
+      document.getElementById('f-fit').value = newFitment.map(f => `${f.make} ${f.model} ${f.years}`).join('\n');
+      document.getElementById('s2n').textContent = info.name || num;
+      document.getElementById('s2num').textContent = num;
+      goS(2);
+    }
+
+    function handleAddImg(inp) {
+      const file = inp.files[0]; if (!file) return;
+      const r = new FileReader();
+      r.onload = async e => {
+        newImg = e.target.result;
+        const prev = document.getElementById('addImgPrev'); prev.src = newImg; prev.style.display = 'block';
+        // AI recognize
+        try {
+          const imgData = newImg.split(',')[1]; const mt = newImg.split(';')[0].split(':')[1];
+          const resp = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 300, messages: [{ role: 'user', content: [{ type: 'image', source: { type: 'base64', media_type: mt, data: imgData } }, { type: 'text', text: 'JSON فقط: {"partName":"","brand":"","partNumber":""}' }] }] }) });
+          const data = await resp.json();
+          const info = JSON.parse(data.content.map(c => c.text || '').join('').replace(/```json|```/g, '').trim());
+          document.getElementById('addRecogTxt').textContent = `تعرف على: ${info.partName || '—'} · ${info.brand || ''}${info.partNumber ? ' · ' + info.partNumber : ''}`;
+          document.getElementById('addRecog').style.display = 'block';
+          if (info.partName && !document.getElementById('f-name').value) document.getElementById('f-name').value = info.partName;
+          if (info.brand && !document.getElementById('f-brand').value) document.getElementById('f-brand').value = info.brand;
+        } catch (e) { }
+      };
+      r.readAsDataURL(file);
+      goS(3);
+    }
+
+    function skipAddImg() { newImg = null; goS(3); }
+
+    function selBT(t, el) { newBeltType = t; document.querySelectorAll('.btb').forEach(b => b.classList.remove('sel')); if (el) el.classList.add('sel'); updBeltCode(); }
+    function updBeltCode() { if (!newBeltType) return; const len = parseFloat(document.getElementById('d-len').value) || 0; const code = newBeltType + '-' + (len ? Math.round(len / 25.4) : '?'); document.getElementById('bcp').textContent = code; document.getElementById('bcp-wrap').style.display = 'block'; document.getElementById('d-alt').value = code; }
+
+    function renderFitChips() { document.getElementById('fitChips').innerHTML = newFitment.map((f, i) => `<div class="fchip" onclick="rmFit(${i})">${f.make} ${f.model} <span style="color:var(--muted);font-size:10px">${f.years}</span> <span style="color:var(--danger);font-size:10px">✕</span></div>`).join(''); }
+    function rmFit(i) { newFitment.splice(i, 1); renderFitChips(); }
+    function addFit() { const v = document.getElementById('fit-in').value.trim(); if (!v) return; const p = v.split(' '); newFitment.push({ make: p[0] || v, model: p[1] || '', years: p.slice(2).join(' ') || '' }); renderFitChips(); document.getElementById('fit-in').value = ''; }
+
+    async function aiFit() {
+      const num = document.getElementById('f-num').value; if (!num) { toast('⚠️ أدخل رقم القطعة'); return; }
+      toast('🤖 جاري الجلب...', 'var(--accent2)');
+      try {
+        const r = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 500, messages: [{ role: 'user', content: `رقم القطعة: "${num}". JSON فقط: [{"make":"","model":"","years":""}] — 5-8 سيارات` }] }) });
+        const d = await r.json();
+        newFitment = JSON.parse(d.content.map(c => c.text || '').join('').replace(/```json|```/g, '').trim());
+        renderFitChips();
+        document.getElementById('f-fit').value = newFitment.map(f => `${f.make} ${f.model} ${f.years}`).join('\n');
+        toast('✅ تم جلب ' + newFitment.length + ' سيارة', 'var(--accent3)');
+      } catch (e) { toast('⚠️ تعذر الجلب', 'var(--danger)'); }
+    }
+
+    async function savePart() {
+      const name = document.getElementById('f-name').value.trim();
+      const num = document.getElementById('f-num').value.trim();
+      const price = parseFloat(document.getElementById('f-price').value) || 0;
+      const qty = parseInt(document.getElementById('f-qty').value) || 0;
+      if (!name || !num) { toast('⚠️ الاسم والرقم مطلوبان', 'var(--accent)'); return; }
+      if (!price) { toast('⚠️ أدخل السعر', 'var(--accent)'); return; }
+      const txt = document.getElementById('f-fit').value.trim().split('\n').filter(Boolean);
+      const fit = newFitment.length > 0 ? newFitment : txt.map(l => { const p = l.split(' '); return { make: p[0] || '', model: p[1] || '', years: p.slice(2).join(' ') || '' }; });
+      const part = {
+        num, name, cat: document.getElementById('f-cat').value, brand: document.getElementById('f-brand').value || 'غير محدد', price, qty, img: newImg || '', beltType: newBeltType || '',
+        dims: { length: parseFloat(document.getElementById('d-len').value) || null, width: parseFloat(document.getElementById('d-wid').value) || null, height: parseFloat(document.getElementById('d-hgt').value) || null, inner: parseFloat(document.getElementById('d-inn').value) || null, outer: parseFloat(document.getElementById('d-out').value) || null, weight: parseFloat(document.getElementById('d-wgt').value) || null, altcode: document.getElementById('d-alt').value || '' },
+        notes: document.getElementById('f-notes').value, fitment: fit
+      };
+      const btn = document.getElementById('saveBtn'); btn.disabled = true; btn.textContent = 'جاري الحفظ...';
+      await saveToSheets(part);
+      btn.disabled = false; btn.textContent = '💾 حفظ في Google Sheets';
+      // Reset form
+      newImg = null; newFitment = []; newBeltType = '';
+      document.getElementById('addNum').value = '';
+      document.getElementById('addImgPrev').style.display = 'none';
+      document.getElementById('addRecog').style.display = 'none';
+      goS(1);
+    }
+
+    // ══════════════════
+    // BELTS
+    // ══════════════════
+    function renderBelts(data) {
+      document.getElementById('belt-cnt').textContent = '(' + data.length + ')';
+      document.getElementById('beltRes').innerHTML = data.length === 0 ? '<div style="color:var(--muted);font-size:13px;padding:20px">لا توجد قشاطات</div>' : data.map(p => { const d = p.dims || {}; return `<div class="bcard" onclick="beltClick(${p.id})"><div class="bcard-type">نوع ${p.beltType || '—'}</div>${p.img ? `<img src="${p.img}" class="bcard-img-wrap" style="object-fit:contain">` : '<div class="bcard-img-wrap">🔶</div>'}<div class="bcard-code">${d.altcode || p.num}</div><div class="bcard-name">${p.name}</div><div class="bcard-dims">${d.length ? `<div class="bdim">طول:${d.length}mm</div>` : ''}${d.width ? `<div class="bdim">عرض:${d.width}mm</div>` : ''}${d.height ? `<div class="bdim">سماكة:${d.height}mm</div>` : ''}</div><div style="font-size:11px;color:${p.qty === 0 ? 'var(--danger)' : p.qty <= 2 ? 'var(--accent)' : 'var(--accent3)'}">${p.qty === 0 ? '⚠️ نفذ' : p.qty <= 2 ? '▼' + p.qty + ' متبقي' : '✓' + p.qty + ' قطعة'}</div></div>`; }).join('');
+    }
+    function beltClick(id) { const p = DB.find(x => x.id === id); if (!p) return; showResult(p); swSrch('t'); showTab('search', document.querySelectorAll('.tab')[0]); }
+    function srchBelts() { const code = document.getElementById('bs-code').value.trim().toLowerCase(); const len = parseFloat(document.getElementById('bs-len').value) || null; const wid = parseFloat(document.getElementById('bs-wid').value) || null; let res = DB.filter(p => p.cat === 'قشاطات'); if (code) res = res.filter(p => p.num && p.num.toLowerCase().includes(code) || (p.dims && p.dims.altcode && p.dims.altcode.toLowerCase().includes(code))); if (len) res = res.filter(p => p.dims && p.dims.length && Math.abs(p.dims.length - len) <= 25); if (wid) res = res.filter(p => p.dims && p.dims.width && Math.abs(p.dims.width - wid) <= 2); renderBelts(res); toast(res.length === 0 ? 'لا نتائج' : '✓ ' + res.length + ' قشاطة', res.length === 0 ? 'var(--accent)' : 'var(--accent3)'); }
+    function addBelt() { showTab('add', document.querySelectorAll('.tab')[1]); document.getElementById('f-cat').value = 'قشاطات'; document.getElementById('belt-sec').style.display = 'block'; skipFetch(); goS(3); }
+
+    // ══════════════════
+    // TABLE
+    // ══════════════════
+    function renderTable(data) {
+      document.getElementById('tblBody').innerHTML = data.map(p => {
+        const qty = parseInt(p.qty) || 0;
+        const sb = qty === 0 ? '<span class="sbadge out">✗</span>' : qty <= 2 ? `<span class="sbadge low">▼${qty}</span>` : `<span class="sbadge ok">✓${qty}</span>`;
+        const img = p.img ? `<img src="${p.img}" class="thumb">` : '<div class="no-thumb">🔩</div>';
+        const d = p.dims || {}; const ds = [d.altcode, d.length && d.length + 'mm', d.width && '×' + d.width].filter(Boolean).join(' ');
+        return `<tr><td>${img}</td><td class="pnum">${p.num || ''}</td><td><b>${p.name || ''}</b><div style="font-size:10px;color:var(--muted)">${p.brand || ''}</div></td><td style="font-size:10px;color:var(--dim);font-family:'IBM Plex Mono',monospace">${ds || '—'}</td><td><b>$${(parseFloat(p.price) || 0).toFixed(2)}</b></td><td>${sb}</td><td style="font-size:10px;color:var(--muted)">${(p.fitment || []).length}🚗</td><td style="white-space:nowrap"><button class="iBtn" onclick="openEdit(DB.find(x=>x.id==${p.id}))">✏️</button><button class="iBtn" onclick="delPart(${JSON.stringify(p.id)})" style="border-color:var(--danger)">🗑️</button></td></tr>`;
+      }).join('');
+    }
+    function filterTbl(q) { renderTable(DB.filter(p => (p.name && p.name.includes(q)) || (p.num && p.num.toLowerCase().includes(q.toLowerCase())) || (p.brand && p.brand.includes(q)))); }
+    function filterCat(c) { renderTable(c ? DB.filter(p => p.cat === c) : DB); }
+    async function delPart(id) { if (!confirm('حذف؟')) return; await deleteInSheets(id); }
+
+    // ══════════════════
+    // EDIT MODAL
+    // ══════════════════
+    function swET(i, el) { ['et0', 'et1', 'et2'].forEach((id, j) => document.getElementById(id).classList.toggle('active', j === i)); document.querySelectorAll('#editModal .mtab').forEach(t => t.classList.remove('active')); el.classList.add('active'); }
+    function openEdit(p) {
+      editingId = p.id;
+      ['num', 'name', 'cat', 'brand', 'price', 'qty'].forEach(k => document.getElementById('e-' + k).value = p[k] || '');
+      const d = p.dims || {};
+      ['len', 'wid', 'hgt', 'inn', 'out', 'wgt'].forEach((k, i) => document.getElementById('ed-' + k).value = ([d.length, d.width, d.height, d.inner, d.outer, d.weight][i]) || '');
+      document.getElementById('ed-alt').value = d.altcode || '';
+      document.getElementById('e-fit').value = (p.fitment || []).map(f => `${f.make} ${f.model} ${f.years}`).join('\n');
+      document.getElementById('editModal').classList.add('show');
+    }
+    function closeEdit() { document.getElementById('editModal').classList.remove('show'); }
+    async function saveEdit() {
+      const idx = DB.findIndex(p => p.id === editingId); if (idx < 0) return;
+      const updated = {
+        ...DB[idx], num: document.getElementById('e-num').value, name: document.getElementById('e-name').value, cat: document.getElementById('e-cat').value, brand: document.getElementById('e-brand').value, price: parseFloat(document.getElementById('e-price').value) || 0, qty: parseInt(document.getElementById('e-qty').value) || 0,
+        dims: { length: parseFloat(document.getElementById('ed-len').value) || null, width: parseFloat(document.getElementById('ed-wid').value) || null, height: parseFloat(document.getElementById('ed-hgt').value) || null, inner: parseFloat(document.getElementById('ed-inn').value) || null, outer: parseFloat(document.getElementById('ed-out').value) || null, weight: parseFloat(document.getElementById('ed-wgt').value) || null, altcode: document.getElementById('ed-alt').value || '' },
+        fitment: document.getElementById('e-fit').value.trim().split('\n').filter(Boolean).map(l => { const p = l.split(' '); return { make: p[0] || '', model: p[1] || '', years: p.slice(2).join(' ') || '' }; })
+      };
+      closeEdit();
+      await updateInSheets(updated);
+    }
+
+    // ══════════════════
+    // BARCODE
+    // ══════════════════
+    function buildBars(seed) { let h = ''; const r = s => { let x = Math.sin(s) * 10000; return x - Math.floor(x); }; for (let i = 0; i < 48; i++) { const w = r(seed * 100 + i) < .4 ? 3 : r(seed * 50 + i) < .6 ? 2 : 1; const ht = r(seed * 30 + i) < .15 ? 34 : 44; h += `<div class="bar" style="width:${w}px;height:${ht}px"></div>`; } return h; }
+    function buildLabel(p, shop) { const seed = (p.num || '').split('').reduce((a, c) => a + c.charCodeAt(0), 0); const d = p.dims || {}; const ds = [d.altcode, d.length && d.length + 'mm', d.width && '×' + d.width + 'mm'].filter(Boolean).join(' '); return `<div class="bc-label"><div class="bc-shop">${shop}</div>${p.img ? `<img src="${p.img}" style="width:55px;height:36px;object-fit:contain;margin:3px 0">` : ''}<div class="bc-name">${p.name || ''}</div><div class="bc-bars">${buildBars(seed)}</div><div class="bc-price">$${(parseFloat(p.price) || 0).toFixed(2)}</div><div class="bc-num">${p.num || ''} · ${p.brand || ''}</div>${ds ? `<div class="bc-dims-lbl">📐 ${ds}</div>` : ''}</div>`; }
+    function populateBC() { document.getElementById('bc-sel').innerHTML = '<option value="">-- اختر قطعة --</option>' + DB.map(p => `<option value="${p.id}">${p.name || ''} (${p.num || ''})</option>`).join(''); }
+    function updateBC() { const id = document.getElementById('bc-sel').value; const shop = document.getElementById('bc-shop').value; const prev = document.getElementById('bc-prev'); if (!id) { prev.innerHTML = '<div style="color:var(--muted);font-size:13px">اختر قطعة</div>'; return; } const p = DB.find(x => String(x.id) === String(id)); if (p) prev.innerHTML = buildLabel(p, shop); }
+    function printBC() { toast('🖨️ جاري الطباعة...', 'var(--accent2)'); }
+
+    // ══════════════════
+    // DASHBOARD
+    // ══════════════════
+    function renderDash() {
+      document.getElementById('d-total').textContent = DB.length;
+      document.getElementById('d-belts').textContent = DB.filter(p => p.cat === 'قشاطات').length;
+      const low = DB.filter(p => parseInt(p.qty) <= 2);
+      document.getElementById('d-low').textContent = low.length;
+      document.getElementById('d-val').textContent = '$' + DB.reduce((s, p) => s + (parseFloat(p.price) || 0) * (parseInt(p.qty) || 0), 0).toFixed(0);
+      document.getElementById('d-ll').innerHTML = low.length === 0 ? '<div style="color:var(--muted);font-size:12px;padding:10px 0">لا يوجد نقص 👍</div>' : low.map(p => `<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(46,51,72,.4)"><div><div style="font-size:12px;font-weight:700">${p.name || ''}</div><div style="font-size:10px;color:var(--muted)">${p.num || ''}</div></div><div style="font-size:11px;font-weight:700;color:${parseInt(p.qty) === 0 ? 'var(--danger)' : 'var(--accent)'}">${parseInt(p.qty) === 0 ? 'نفذ!' : p.qty + ' متبقي'}</div></div>`).join('');
+      const cats = ['قطع محرك', 'قطع كهرباء', 'قطع هيكل', 'تعليق وفرامل', 'قشاطات']; const clrs = ['var(--accent)', 'var(--accent2)', 'var(--accent3)', 'var(--purple)', 'var(--orange)']; const cnts = cats.map(c => DB.filter(p => p.cat === c).length); const mx = Math.max(...cnts, 1);
+      document.getElementById('d-bar').innerHTML = cnts.map((c, i) => `<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%"><div style="font-size:11px;font-weight:700;margin-bottom:2px">${c}</div><div style="width:100%;height:${Math.round(c / mx * 100)}%;background:${clrs[i]};border-radius:3px 3px 0 0;min-height:3px"></div></div>`).join('');
+      document.getElementById('d-lbl').innerHTML = cats.map((c, i) => `<div style="flex:1;display:flex;align-items:center;gap:3px;justify-content:center"><div style="width:6px;height:6px;border-radius:50%;background:${clrs[i]}"></div>${c.replace('قطع ', '')}</div>`).join('');
+    }
+
+    // ══════════════════
+    // UTILS
+    // ══════════════════
+    function updateStats() { document.getElementById('h-total').textContent = DB.length; document.getElementById('h-belts').textContent = DB.filter(p => p.cat === 'قشاطات').length; }
+    function toast(msg, bg = 'var(--accent3)') { const t = document.getElementById('toast'); t.textContent = msg; t.style.background = bg; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 3000); }
+
+    function getDemoData() {
+      return [
+        { id: 1, num: '0451103079', name: 'فلتر زيت بوش', cat: 'قطع محرك', brand: 'BOSCH', price: 8.5, qty: 15, img: null, beltType: null, dims: { length: 76, width: 76, height: 89, inner: 62, outer: 76, weight: 0.15, altcode: '' }, fitment: [{ make: 'تويوتا', model: 'كامري', years: '2012-2020' }, { make: 'هوندا', model: 'أكورد', years: '2013-2020' }] },
+        { id: 2, num: 'A-42', name: 'قشاطة مروحة A-42', cat: 'قشاطات', brand: 'Gates', price: 6.5, qty: 12, img: null, beltType: 'A', dims: { length: 1067, width: 13, height: 8, altcode: 'A-42' }, fitment: [{ make: 'تويوتا', model: 'كورولا', years: '2000-2012' }, { make: 'هوندا', model: 'سيفيك', years: '1999-2010' }] },
+        { id: 3, num: 'B-54', name: 'قشاطة مروحة B-54', cat: 'قشاطات', brand: 'Bando', price: 8.0, qty: 8, img: null, beltType: 'B', dims: { length: 1372, width: 17, height: 11, altcode: 'B-54' }, fitment: [{ make: 'تويوتا', model: 'كامري', years: '2002-2009' }] },
+        { id: 4, num: '4414554', name: 'طقم شمعات NGK', cat: 'قطع كهرباء', brand: 'NGK', price: 18, qty: 2, img: null, beltType: null, dims: { altcode: 'BKR5E-11' }, fitment: [{ make: 'تويوتا', model: 'كامري', years: '2007-2018' }] },
+        { id: 5, num: '1J0698151G', name: 'طقم فرامل فولكس', cat: 'تعليق وفرامل', brand: 'TRW', price: 45, qty: 0, img: null, beltType: null, dims: { width: 122, height: 16 }, fitment: [{ make: 'فولكس', model: 'جيتا', years: '2005-2014' }] },
+      ];
+    }
+
+    function makeCallbackName() {
+      return 'gsapi_cb_' + Date.now() + '_' + Math.random().toString(36).slice(2);
+    }
+
+    function jsonpRequest(params) {
+      return new Promise((resolve, reject) => {
+        const callback = makeCallbackName();
+        const script = document.createElement('script');
+        const query = new URLSearchParams({ ...params, callback });
+        const sep = API_URL.includes('?') ? '&' : '?';
+        const timeout = setTimeout(() => {
+          cleanup();
+          reject(new Error('JSONP timeout'));
+        }, 15000);
+
+        function cleanup() {
+          clearTimeout(timeout);
+          delete window[callback];
+          script.remove();
+        }
+
+        window[callback] = data => {
+          cleanup();
+          resolve(data);
+        };
+
+        script.onerror = () => {
+          cleanup();
+          reject(new Error('JSONP load failed'));
+        };
+
+        script.src = API_URL + sep + query.toString();
+        document.body.appendChild(script);
+      });
+    }
+
+    function submitToSheets(payload) {
+      if (!API_URL) {
+        return Promise.reject(new Error('Missing API URL'));
+      }
+
+      return fetch(API_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(payload)
+      }).then(() => ({ success: true }));
+    }
+
+    async function loadFromSheets() {
+      if (!API_URL) { openSetup(); return; }
+      setConnected(false, 'جاري الاتصال...');
+      document.getElementById('loadingScreen').classList.add('show');
+      try {
+        const data = await jsonpRequest({ action: 'getAll' });
+        if (data.success) {
+          DB = data.data.map(normalizePart);
+          setConnected(true, 'âœ“ Google Sheets');
+          document.getElementById('lastSync').textContent = 'خر تحديث:' + new Date().toLocaleTimeString('ar');
+          toast('✅ تم تحميل ' + DB.length + ' قطعة من Google Sheets', 'var(--accent3)');
+        } else {
+          throw new Error(data.error);
+        }
+      } catch (e) {
+        setConnected(false, 'خطأ في الاتصال');
+        toast('❌ تعذر الاتصال — تحقق من الرابط أو اتصالك بالإنترنت', 'var(--danger)');
+        if (DB.length === 0) DB = getDemoData();
+      }
+      document.getElementById('loadingScreen').classList.remove('show');
+      refreshAll();
+    }
+
+    async function saveToSheets(part) {
+      if (!API_URL || !isConnected) {
+        DB.push({ ...part, id: Date.now() });
+        refreshAll();
+        toast('💾 محفوظ محلياً (غير متصل بـ Sheets)', 'var(--accent)'); return;
+      }
+      setSyncing(true);
+      try {
+        part.id = part.id || Date.now();
+        await submitToSheets({ action: 'add', part });
+        DB.push(part);
+        refreshAll();
+        toast('✅ تم إرسال الحفظ إلى Google Sheets', 'var(--accent3)'); setTimeout(loadFromSheets, 1200);
+      } catch (e) {
+        toast('❌ خطأ في الحفظ — جرّب مرة ثانية', 'var(--danger)');
+      }
+      setSyncing(false);
+    }
+
+    async function updateInSheets(part) {
+      if (!API_URL || !isConnected) {
+        const i = DB.findIndex(p => p.id === part.id);
+        if (i >= 0) DB[i] = part;
+        refreshAll();
+        toast('💾 تم التحديث محلياً', 'var(--accent)');
+        return;
+      }
+      setSyncing(true);
+      try {
+        await submitToSheets({ action: 'update', part });
+        const i = DB.findIndex(p => p.id === part.id);
+        if (i >= 0) DB[i] = part;
+        refreshAll();
+        toast('✅ تم التحديث في Google Sheets', 'var(--accent3)');
+        setTimeout(loadFromSheets, 1200);
+      } catch (e) {
+        toast('❌ خطأ في التحديث', 'var(--danger)');
+      }
+      setSyncing(false);
+    }
+
+    async function deleteInSheets(id) {
+      if (!API_URL || !isConnected) {
+        DB = DB.filter(p => p.id !== id);
+        refreshAll();
+        toast('🗑️ تم الحذف محلياً');
+        return;
+      }
+      setSyncing(true);
+      try {
+        await submitToSheets({ action: 'delete', id });
+        DB = DB.filter(p => p.id !== id);
+        refreshAll();
+        toast('🗑️ تم الحذف من Google Sheets');
+        setTimeout(loadFromSheets, 1200);
+      } catch (e) {
+        toast('❌ خطأ في الحذف', 'var(--danger)');
+      }
+      setSyncing(false);
+    }
+    // INIT
+    if (API_URL) {
+      document.getElementById('setupBanner').classList.remove('show');
+      document.getElementById('apiUrlInput').value = API_URL;
+      loadFromSheets();
     } else {
-      throw new Error(data.error);
+      DB = getDemoData();
+      refreshAll();
+      setConnected(false, 'غير متصل — أضف رابط Sheets');
     }
-  } catch(e){
-    setConnected(false, 'Ø®Ø·Ø£ ÙÙŠ Ø§Ù„Ø§ØªØµØ§Ù„');
-    toast('âŒ ØªØ¹Ø°Ø± Ø§Ù„Ø§ØªØµØ§Ù„ â€” ØªØ­Ù‚Ù‚ Ù…Ù† Ø§Ù„Ø±Ø§Ø¨Ø· Ø£Ùˆ Ø§ØªØµØ§Ù„Ùƒ Ø¨Ø§Ù„Ø¥Ù†ØªØ±Ù†Øª','var(--danger)');
-    if(DB.length === 0) DB = getDemoData();
-  }
-  document.getElementById('loadingScreen').classList.remove('show');
-  refreshAll();
-}
-
-async function saveToSheets(part){
-  if(!API_URL || !isConnected){
-    DB.push({...part, id: Date.now()});
-    refreshAll();
-    toast('ðŸ’¾ Ù…Ø­ÙÙˆØ¸ Ù…Ø­Ù„ÙŠØ§Ù‹ (ØºÙŠØ± Ù…ØªØµÙ„ Ø¨Ù€ Sheets)','var(--accent)');
-    return;
-  }
-  setSyncing(true);
-  try{
-    part.id = part.id || Date.now();
-    await submitToSheets({action:'add', part});
-    DB.push(part);
-    refreshAll();
-    toast('âœ… ØªÙ… Ø¥Ø±Ø³Ø§Ù„ Ø§Ù„Ø­ÙØ¸ Ø¥Ù„Ù‰ Google Sheets','var(--accent3)');
-    setTimeout(loadFromSheets, 1200);
-  } catch(e){
-    toast('âŒ Ø®Ø·Ø£ ÙÙŠ Ø§Ù„Ø­ÙØ¸ â€” Ø¬Ø±Ø¨ Ù…Ø±Ø© Ø«Ø§Ù†ÙŠØ©','var(--danger)');
-  }
-  setSyncing(false);
-}
-
-async function updateInSheets(part){
-  if(!API_URL || !isConnected){
-    const i = DB.findIndex(p=>p.id===part.id);
-    if(i>=0) DB[i]=part;
-    refreshAll();
-    toast('ðŸ’¾ ØªÙ… Ø§Ù„ØªØ­Ø¯ÙŠØ« Ù…Ø­Ù„ÙŠØ§Ù‹','var(--accent)');
-    return;
-  }
-  setSyncing(true);
-  try{
-    await submitToSheets({action:'update',part});
-    const i=DB.findIndex(p=>p.id===part.id);
-    if(i>=0)DB[i]=part;
-    refreshAll();
-    toast('âœ… ØªÙ… Ø§Ù„ØªØ­Ø¯ÙŠØ« ÙÙŠ Google Sheets','var(--accent3)');
-    setTimeout(loadFromSheets, 1200);
-  }catch(e){toast('âŒ Ø®Ø·Ø£ ÙÙŠ Ø§Ù„ØªØ­Ø¯ÙŠØ«','var(--danger)');}
-  setSyncing(false);
-}
-
-async function deleteInSheets(id){
-  if(!API_URL||!isConnected){DB=DB.filter(p=>p.id!==id);refreshAll();toast('ðŸ—‘ï¸ ØªÙ… Ø§Ù„Ø­Ø°Ù Ù…Ø­Ù„ÙŠØ§Ù‹');return;}
-  setSyncing(true);
-  try{
-    await submitToSheets({action:'delete',id});
-    DB=DB.filter(p=>p.id!==id);
-    refreshAll();
-    toast('ðŸ—‘ï¸ ØªÙ… Ø§Ù„Ø­Ø°Ù Ù…Ù† Google Sheets');
-    setTimeout(loadFromSheets, 1200);
-  }catch(e){toast('âŒ Ø®Ø·Ø£ ÙÙŠ Ø§Ù„Ø­Ø°Ù','var(--danger)');}
-  setSyncing(false);
-}
-
-// INIT
-if(API_URL){
-  document.getElementById('setupBanner').classList.remove('show');
-  document.getElementById('apiUrlInput').value=API_URL;
-  loadFromSheets();
-} else {
-  DB=getDemoData();
-  refreshAll();
-  setConnected(false,'غير متصل — أضف رابط Sheets');
-}
-goS(1);
-</script>
+    goS(1);
+  </script>
 </body>
+
 </html>
