@@ -11,6 +11,16 @@ function jsonResponse(data) {
     .setMimeType(ContentService.MimeType.JSON);
 }
 
+function outputResponse(data, callback) {
+  if (callback) {
+    return ContentService
+      .createTextOutput(`${callback}(${JSON.stringify(data)})`)
+      .setMimeType(ContentService.MimeType.JAVASCRIPT);
+  }
+
+  return jsonResponse(data);
+}
+
 function getSheet() {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
   if (!sheet) {
@@ -23,6 +33,7 @@ function getSheet() {
 function doGet(e) {
   const params = e && e.parameter ? e.parameter : {};
   const action = params.action;
+  const callback = params.callback;
   let result;
 
   if (!action) {
@@ -38,20 +49,30 @@ function doGet(e) {
     result = { success: false, error: 'Unknown action' };
   }
 
-  return jsonResponse(result);
+  return outputResponse(result, callback);
 }
 
 // Handles add/update/delete
 function doPost(e) {
-  if (!e || !e.postData || !e.postData.contents) {
+  if (!e) {
     return jsonResponse({ success: false, error: 'Missing POST body' });
   }
 
   let data;
-  try {
-    data = JSON.parse(e.postData.contents);
-  } catch (err) {
-    return jsonResponse({ success: false, error: 'Invalid JSON body' });
+  if (e.parameter && e.parameter.payload) {
+    try {
+      data = JSON.parse(e.parameter.payload);
+    } catch (err) {
+      return jsonResponse({ success: false, error: 'Invalid payload JSON' });
+    }
+  } else if (e.postData && e.postData.contents) {
+    try {
+      data = JSON.parse(e.postData.contents);
+    } catch (err) {
+      return jsonResponse({ success: false, error: 'Invalid JSON body' });
+    }
+  } else {
+    return jsonResponse({ success: false, error: 'Missing POST body' });
   }
 
   const action = data.action;
@@ -111,7 +132,7 @@ function addPart(part) {
   const sheet = getSheet();
   const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
 
-  part.id = Date.now();
+  part.id = part.id || Date.now();
 
   const row = headers.map(h => {
     let val = part[h] ?? '';

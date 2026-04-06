@@ -1116,6 +1116,132 @@ function getDemoData(){
   ];
 }
 
+function makeCallbackName(){
+  return 'gsapi_cb_' + Date.now() + '_' + Math.random().toString(36).slice(2);
+}
+
+function jsonpRequest(params){
+  return new Promise((resolve, reject) => {
+    const callback = makeCallbackName();
+    const script = document.createElement('script');
+    const query = new URLSearchParams({...params, callback});
+    const sep = API_URL.includes('?') ? '&' : '?';
+    const timeout = setTimeout(() => {
+      cleanup();
+      reject(new Error('JSONP timeout'));
+    }, 15000);
+
+    function cleanup(){
+      clearTimeout(timeout);
+      delete window[callback];
+      script.remove();
+    }
+
+    window[callback] = data => {
+      cleanup();
+      resolve(data);
+    };
+
+    script.onerror = () => {
+      cleanup();
+      reject(new Error('JSONP load failed'));
+    };
+
+    script.src = API_URL + sep + query.toString();
+    document.body.appendChild(script);
+  });
+}
+
+function submitToSheets(payload){
+  if(!API_URL){
+    return Promise.reject(new Error('Missing API URL'));
+  }
+
+  return fetch(API_URL, {
+    method:'POST',
+    mode:'no-cors',
+    headers:{'Content-Type':'text/plain;charset=utf-8'},
+    body: JSON.stringify(payload)
+  }).then(() => ({success:true}));
+}
+
+async function loadFromSheets(){
+  if(!API_URL){ openSetup(); return; }
+  setConnected(false, 'Ø¬Ø§Ø±ÙŠ Ø§Ù„Ø§ØªØµØ§Ù„...');
+  document.getElementById('loadingScreen').classList.add('show');
+  try{
+    const data = await jsonpRequest({action:'getAll'});
+    if(data.success){
+      DB = data.data.map(normalizePart);
+      setConnected(true, 'âœ“ Google Sheets');
+      document.getElementById('lastSync').textContent = 'Ø¢Ø®Ø± ØªØ­Ø¯ÙŠØ«: ' + new Date().toLocaleTimeString('ar');
+      toast('âœ… ØªÙ… ØªØ­Ù…ÙŠÙ„ '+DB.length+' Ù‚Ø·Ø¹Ø© Ù…Ù† Google Sheets','var(--accent3)');
+    } else {
+      throw new Error(data.error);
+    }
+  } catch(e){
+    setConnected(false, 'Ø®Ø·Ø£ ÙÙŠ Ø§Ù„Ø§ØªØµØ§Ù„');
+    toast('âŒ ØªØ¹Ø°Ø± Ø§Ù„Ø§ØªØµØ§Ù„ â€” ØªØ­Ù‚Ù‚ Ù…Ù† Ø§Ù„Ø±Ø§Ø¨Ø· Ø£Ùˆ Ø§ØªØµØ§Ù„Ùƒ Ø¨Ø§Ù„Ø¥Ù†ØªØ±Ù†Øª','var(--danger)');
+    if(DB.length === 0) DB = getDemoData();
+  }
+  document.getElementById('loadingScreen').classList.remove('show');
+  refreshAll();
+}
+
+async function saveToSheets(part){
+  if(!API_URL || !isConnected){
+    DB.push({...part, id: Date.now()});
+    refreshAll();
+    toast('ðŸ’¾ Ù…Ø­ÙÙˆØ¸ Ù…Ø­Ù„ÙŠØ§Ù‹ (ØºÙŠØ± Ù…ØªØµÙ„ Ø¨Ù€ Sheets)','var(--accent)');
+    return;
+  }
+  setSyncing(true);
+  try{
+    part.id = part.id || Date.now();
+    await submitToSheets({action:'add', part});
+    DB.push(part);
+    refreshAll();
+    toast('âœ… ØªÙ… Ø¥Ø±Ø³Ø§Ù„ Ø§Ù„Ø­ÙØ¸ Ø¥Ù„Ù‰ Google Sheets','var(--accent3)');
+    setTimeout(loadFromSheets, 1200);
+  } catch(e){
+    toast('âŒ Ø®Ø·Ø£ ÙÙŠ Ø§Ù„Ø­ÙØ¸ â€” Ø¬Ø±Ø¨ Ù…Ø±Ø© Ø«Ø§Ù†ÙŠØ©','var(--danger)');
+  }
+  setSyncing(false);
+}
+
+async function updateInSheets(part){
+  if(!API_URL || !isConnected){
+    const i = DB.findIndex(p=>p.id===part.id);
+    if(i>=0) DB[i]=part;
+    refreshAll();
+    toast('ðŸ’¾ ØªÙ… Ø§Ù„ØªØ­Ø¯ÙŠØ« Ù…Ø­Ù„ÙŠØ§Ù‹','var(--accent)');
+    return;
+  }
+  setSyncing(true);
+  try{
+    await submitToSheets({action:'update',part});
+    const i=DB.findIndex(p=>p.id===part.id);
+    if(i>=0)DB[i]=part;
+    refreshAll();
+    toast('âœ… ØªÙ… Ø§Ù„ØªØ­Ø¯ÙŠØ« ÙÙŠ Google Sheets','var(--accent3)');
+    setTimeout(loadFromSheets, 1200);
+  }catch(e){toast('âŒ Ø®Ø·Ø£ ÙÙŠ Ø§Ù„ØªØ­Ø¯ÙŠØ«','var(--danger)');}
+  setSyncing(false);
+}
+
+async function deleteInSheets(id){
+  if(!API_URL||!isConnected){DB=DB.filter(p=>p.id!==id);refreshAll();toast('ðŸ—‘ï¸ ØªÙ… Ø§Ù„Ø­Ø°Ù Ù…Ø­Ù„ÙŠØ§Ù‹');return;}
+  setSyncing(true);
+  try{
+    await submitToSheets({action:'delete',id});
+    DB=DB.filter(p=>p.id!==id);
+    refreshAll();
+    toast('ðŸ—‘ï¸ ØªÙ… Ø§Ù„Ø­Ø°Ù Ù…Ù† Google Sheets');
+    setTimeout(loadFromSheets, 1200);
+  }catch(e){toast('âŒ Ø®Ø·Ø£ ÙÙŠ Ø§Ù„Ø­Ø°Ù','var(--danger)');}
+  setSyncing(false);
+}
+
 // INIT
 if(API_URL){
   document.getElementById('setupBanner').classList.remove('show');
